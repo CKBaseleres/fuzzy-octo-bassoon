@@ -1,5 +1,6 @@
 import { MessageBar, MessageBarBody } from '@fluentui/react-components';
 import type { QuotaLimit, RefusedResponse } from '@lingo-lens/shared';
+import { useEffect, useId, useRef } from 'react';
 import { HttpError } from '../api/client';
 
 /** A quota or kill-switch refusal (429), as the screen shows it. */
@@ -29,11 +30,21 @@ export function refusalMessage({ limit, retryAfterMinutes }: Refusal): string {
   return `You’ve reached the hourly limit. Try again in ${retryAfterMinutes} minute${retryAfterMinutes === 1 ? '' : 's'}.`;
 }
 
-/** Spec category 3 (Refused): a warning with no action; the form stays so staff can try later. */
+/**
+ * Spec category 3 (Refused): a warning with no action; the form stays so staff can try later.
+ * Like every failure, focus moves to it when it appears (it unmounts while a new attempt runs).
+ */
 export function RefusedMessage({ refusal }: { refusal: Refusal }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const messageId = useId();
+
+  useEffect(() => {
+    ref.current?.focus();
+  }, []);
+
   return (
-    <MessageBar intent="warning">
-      <MessageBarBody>{refusalMessage(refusal)}</MessageBarBody>
+    <MessageBar ref={ref} tabIndex={-1} intent="warning" aria-labelledby={messageId}>
+      <MessageBarBody id={messageId}>{refusalMessage(refusal)}</MessageBarBody>
     </MessageBar>
   );
 }

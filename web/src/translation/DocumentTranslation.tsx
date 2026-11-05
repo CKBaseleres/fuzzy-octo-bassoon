@@ -67,6 +67,9 @@ export function DocumentTranslation({ pollIntervalMs = 2000 }: { pollIntervalMs?
   const [targetLanguage, setTargetLanguage] = useState('');
   const { state, start, saveAgain, retryDownload, reset, translateAgain } = useDocumentTranslation({ pollIntervalMs });
   const resultHeading = useRef<HTMLHeadingElement>(null);
+  const downloadFailedBar = useRef<HTMLDivElement>(null);
+  const pdfNoteId = useId();
+  const downloadFailedId = useId();
 
   useEffect(() => {
     let active = true;
@@ -79,9 +82,12 @@ export function DocumentTranslation({ pollIntervalMs = 2000 }: { pollIntervalMs?
     };
   }, []);
 
+  // Ready moves focus to the result heading; a failed download is an error, so focus goes to its message.
+  const downloadFailed = state.phase === 'ready' && state.downloadFailed === true;
   useEffect(() => {
-    if (state.phase === 'ready') resultHeading.current?.focus();
-  }, [state.phase]);
+    if (state.phase !== 'ready') return;
+    (downloadFailed ? downloadFailedBar.current : resultHeading.current)?.focus();
+  }, [state.phase, downloadFailed]);
 
   const latestPick = useRef<File>(undefined);
   const onFile = (event: ChangeEvent<HTMLInputElement>) => {
@@ -133,8 +139,8 @@ export function DocumentTranslation({ pollIntervalMs = 2000 }: { pollIntervalMs?
             <input id={fileInputId} type="file" accept={ACCEPT} onChange={onFile} disabled={busy} />
           </Field>
           {check?.ok && check.extension === 'pdf' && (
-            <MessageBar intent="info">
-              <MessageBarBody>{PDF_NOTE}</MessageBarBody>
+            <MessageBar intent="info" aria-labelledby={pdfNoteId}>
+              <MessageBarBody id={pdfNoteId}>{PDF_NOTE}</MessageBarBody>
             </MessageBar>
           )}
           <Field label="Translate into" hint="The file’s language is detected automatically.">
@@ -188,8 +194,8 @@ export function DocumentTranslation({ pollIntervalMs = 2000 }: { pollIntervalMs?
           {state.saved ? (
             <Text>Saved as {state.saved.fileName}. Your files have been deleted from Lingo Lens.</Text>
           ) : state.downloadFailed ? (
-            <MessageBar intent="error">
-              <MessageBarBody>Download failed.</MessageBarBody>
+            <MessageBar ref={downloadFailedBar} tabIndex={-1} intent="error" aria-labelledby={downloadFailedId}>
+              <MessageBarBody id={downloadFailedId}>Download failed.</MessageBarBody>
               <MessageBarActions>
                 <Button onClick={retryDownload}>Try again</Button>
               </MessageBarActions>

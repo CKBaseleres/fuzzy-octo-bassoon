@@ -1,5 +1,5 @@
 import { Button, MessageBar, MessageBarActions, MessageBarBody, MessageBarTitle } from '@fluentui/react-components';
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { failureMessage, referenceCode, type FailureAction, type FailureDetails } from './failureMessages';
 
 /**
@@ -18,15 +18,17 @@ export function FailureMessageBar({
 }) {
   const message = failureMessage(failure);
   const ref = useRef<HTMLDivElement>(null);
+  // Fluent names the group by a MessageBarTitle; most messages have none, so name it by the message itself.
+  const messageId = useId();
 
   useEffect(() => {
     ref.current?.focus();
   }, []);
 
   return (
-    <MessageBar ref={ref} tabIndex={-1} intent={message.intent} layout="multiline">
+    <MessageBar ref={ref} tabIndex={-1} intent={message.intent} layout="multiline" aria-labelledby={messageId}>
       <MessageBarBody>
-        <div>
+        <div id={messageId}>
           {message.title && <MessageBarTitle>{message.title}</MessageBarTitle>}
           {message.text}
         </div>

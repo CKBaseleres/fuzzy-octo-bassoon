@@ -6,3 +6,5 @@ coverage/
 .env
 local.settings.json
 .claude/worktrees/
+test-results/
+playwright-report/
