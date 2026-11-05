@@ -3,14 +3,10 @@
 // Shared-key access is disabled: everything authenticates with Microsoft Entra ID.
 //
 // Extension points for later tickets:
-//   - ticket 04/07: translation blob container(s) and the 1-day lifecycle rule
-//     (managementPolicies) belong here. The CORS rule and soft delete / versioning /
-//     point-in-time restore live on blobServices/default, which needs the SWA origin,
-//     and the SWA is deployed after this module (SWA -> Function App -> storage).
-//     So add a separate module (e.g. modules/blobService.bicep) that main.bicep deploys
-//     after staticWebApp and that declares blobServices 'default' with cors +
-//     deleteRetentionPolicy/containerDeleteRetentionPolicy/isVersioningEnabled/
-//     restorePolicy. Keep blobServices 'default' declared in exactly ONE place.
+//   - ticket 07: the 1-day lifecycle rule (managementPolicies) for the source/target
+//     containers belongs here. CORS and soft delete / versioning / point-in-time
+//     restore live on blobServices 'default', which is declared in exactly ONE place:
+//     modules/blobService.bicep (deployed after the SWA, whose origin CORS needs).
 //   - ticket 08: the quota Table under a `tableServices` child.
 
 param location string
@@ -57,7 +53,27 @@ resource deploymentContainer 'Microsoft.Storage/storageAccounts/blobServices/con
   }
 }
 
+// Translation blobs (ticket 04): `source/<guid>/file.<ext>` is the uploaded Source file,
+// `target/<guid>/file.<ext>` the Translated file. Names carry no personal data.
+resource sourceContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2024-01-01' = {
+  parent: blobService
+  name: 'source'
+  properties: {
+    publicAccess: 'None'
+  }
+}
+
+resource targetContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2024-01-01' = {
+  parent: blobService
+  name: 'target'
+  properties: {
+    publicAccess: 'None'
+  }
+}
+
 output id string = storage.id
 output name string = storage.name
 output blobEndpoint string = storage.properties.primaryEndpoints.blob
+output sourceContainerName string = sourceContainer.name
+output targetContainerName string = targetContainer.name
 output deploymentContainerUrl string = '${storage.properties.primaryEndpoints.blob}${deploymentContainer.name}'

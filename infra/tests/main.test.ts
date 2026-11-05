@@ -149,6 +149,58 @@ describe.skipIf(!bicepAvailable)('main.bicep', () => {
     });
   });
 
+  describe('translation blobs', () => {
+    it('creates private source and target containers for batch Document Translation', () => {
+      const containers = resourcesOfType(template, 'Microsoft.Storage/storageAccounts/blobServices/containers');
+      const names = containers.map((c) => String(c.name));
+      for (const name of ['source', 'target']) {
+        const container = containers[names.findIndex((n) => n.endsWith(`'${name}')]`) || n.endsWith(`/${name}`))];
+        expect(container, name).toBeDefined();
+        expect(props(container!).publicAccess).toBe('None');
+      }
+    });
+
+    it('declares the blob service settings in exactly one place', () => {
+      expect(resourcesOfType(template, 'Microsoft.Storage/storageAccounts/blobServices')).toHaveLength(1);
+    });
+
+    it("allows browser uploads and downloads only from the environment's own SWA origin", () => {
+      const params = moduleParams(template, 'blobService');
+      expect(params.allowedOrigins).toContain('staticWebApp');
+      expect(params.allowedOrigins).toContain('defaultHostName');
+
+      const blobService = single(template, 'Microsoft.Storage/storageAccounts/blobServices');
+      const rules = props<{ cors: { corsRules: Record<string, unknown>[] } }>(blobService).cors.corsRules;
+      expect(rules).toHaveLength(1);
+      expect(rules[0]).toMatchObject({
+        allowedOrigins: "[parameters('allowedOrigins')]",
+        allowedMethods: ['GET', 'HEAD', 'PUT', 'OPTIONS'],
+      });
+      expect(rules[0]!.allowedHeaders).toEqual(expect.arrayContaining(['content-type', 'x-ms-blob-type', 'x-ms-version']));
+    });
+
+    it('adds the prod custom domain to the allowed origins only when one is set', () => {
+      const origins = String(moduleParams(template, 'blobService').allowedOrigins);
+      expect(origins).toContain("parameters('customDomain')");
+      expect(template.parameters?.customDomain?.defaultValue).toBe('');
+    });
+
+    it('deploys the blob service settings after the Static Web App, whose origin they need', () => {
+      const deployment = resourcesOfType(template, 'Microsoft.Resources/deployments').find((d) => d.name === 'blobService');
+      expect(JSON.stringify(deployment?.dependsOn)).toContain("'staticWebApp'");
+    });
+
+    it('turns off soft delete, versioning and point-in-time restore, so a deleted blob is gone', () => {
+      const blobService = single(template, 'Microsoft.Storage/storageAccounts/blobServices');
+      expect(props(blobService)).toMatchObject({
+        deleteRetentionPolicy: { enabled: false },
+        containerDeleteRetentionPolicy: { enabled: false },
+        isVersioningEnabled: false,
+        restorePolicy: { enabled: false },
+      });
+    });
+  });
+
   it('wires the quota, timeout and kill-switch app settings', () => {
     const appSettings = moduleParams(template, 'functionApp').appSettings as Record<string, unknown>;
     expect(Object.keys(appSettings)).toEqual(

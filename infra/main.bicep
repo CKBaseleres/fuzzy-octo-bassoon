@@ -3,10 +3,8 @@
 //   az deployment group create -g rg-lingolens-<env> -f infra/main.bicep -p infra/<env>.bicepparam
 //
 // Later tickets extend this file rather than adding new templates:
-//   - 04/07: storage CORS (origin = 'https://${staticWebApp.outputs.defaultHostName}' for dev,
-//            the custom domain for prod), lifecycle and retention settings -> modules/storage.bicep.
-//            Storage is deployed before the SWA, so blobServices settings go in a module deployed
-//            after staticWebApp (see modules/storage.bicep header).
+//   - 07: Blob lifecycle rule -> modules/storage.bicep (CORS and retention-off are in
+//         modules/blobService.bicep, deployed after the SWA; ticket 04)
 //   - 07: Application Insights "no content, no filenames" settings -> modules/monitoring.bicep
 //   - 08: quota Table (modules/storage.bicep), Budget + alerts (new module), kill switch (translationsEnabled)
 //   - 09: saved Log Analytics query (modules/monitoring.bicep)
@@ -44,6 +42,9 @@ param documentTimeoutMinutes int = 15
 @description('An Image Translation times out this many minutes after it starts.')
 @minValue(1)
 param imageTimeoutMinutes int = 3
+
+@description('Prod custom domain (host name only, e.g. lingolens.example.org). Empty: the SWA default host name only.')
+param customDomain string = ''
 
 @description('Extra tags merged onto every resource.')
 param extraTags object = {}
@@ -138,6 +139,18 @@ module staticWebApp 'modules/staticWebApp.bicep' = {
     tags: tags
     backendResourceId: functionApp.outputs.id
     backendRegion: functionApp.outputs.location
+  }
+}
+
+// Needs the SWA origin, so it runs after staticWebApp (and so after storage).
+module blobService 'modules/blobService.bicep' = {
+  name: 'blobService'
+  params: {
+    storageAccountName: storage.outputs.name
+    allowedOrigins: concat(
+      ['https://${staticWebApp.outputs.defaultHostName}'],
+      empty(customDomain) ? [] : ['https://${customDomain}']
+    )
   }
 }
 
