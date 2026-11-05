@@ -12,6 +12,7 @@ import {
   type ArmResource,
   type ArmTemplate,
 } from './bicep';
+import { evaluateDeep } from './armEval';
 import { DEPLOY_ASSIGNABLE, ROLE } from './roles';
 
 function single(template: ArmTemplate, type: string, kind?: string): ArmResource {
@@ -198,6 +199,21 @@ describe.skipIf(!bicepAvailable)('main.bicep', () => {
         isVersioningEnabled: false,
         restorePolicy: { enabled: false },
       });
+    });
+
+    it('deletes any Source or Translated file older than 1 day, as the backstop to the hourly sweep', () => {
+      const policy = single(template, 'Microsoft.Storage/storageAccounts/managementPolicies');
+      const rules = evaluateDeep(props<{ policy: { rules: unknown[] } }>(policy).policy.rules, {});
+      expect(rules).toEqual([
+        expect.objectContaining({
+          enabled: true,
+          type: 'Lifecycle',
+          definition: {
+            filters: { blobTypes: ['blockBlob'], prefixMatch: ['source/', 'target/'] },
+            actions: { baseBlob: { delete: { daysAfterCreationGreaterThan: 1 } } },
+          },
+        }),
+      ]);
     });
   });
 

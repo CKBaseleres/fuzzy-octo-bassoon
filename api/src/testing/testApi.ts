@@ -1,5 +1,5 @@
 import { HttpRequest, HttpResponse, InvocationContext, type LogLevel } from '@azure/functions';
-import type { Deps, HttpHandlerFactory } from '../deps';
+import type { Deps, HttpHandlerFactory, TimerHandlerFactory } from '../deps';
 import { createFakeAzureServices, type FakeAzureServices } from './fakeAzureServices';
 import { createFakeClock, type FakeClock } from './fakeClock';
 
@@ -35,6 +35,8 @@ export interface TestApi {
   deps: Deps;
   /** Builds the handler from its factory with this API's deps and invokes it like the Functions host would. */
   call(factory: HttpHandlerFactory, request: TestRequest): Promise<TestResponse>;
+  /** Builds a timer Function from its factory and fires it once, like the host would on schedule. */
+  runTimer(factory: TimerHandlerFactory): Promise<void>;
 }
 
 /**
@@ -47,6 +49,11 @@ export function createTestApi(options: { now?: string } = {}): TestApi {
   const azure = createFakeAzureServices({ clock });
   const deps: Deps = { azure, clock };
   const logs: LogEntry[] = [];
+  const context = () =>
+    new InvocationContext({
+      functionName: 'test',
+      logHandler: (level, ...args) => logs.push({ level, args }),
+    });
 
   return {
     azure,
@@ -62,10 +69,7 @@ export function createTestApi(options: { now?: string } = {}): TestApi {
         params: request.params,
         body: request.body === undefined ? undefined : { string: JSON.stringify(request.body) },
       });
-      const result = await handler(httpRequest, new InvocationContext({
-          functionName: 'test',
-          logHandler: (level, ...args) => logs.push({ level, args }),
-        }));
+      const result = await handler(httpRequest, context());
       const response = result instanceof HttpResponse ? result : new HttpResponse(result);
       const text = await response.text();
       return {
@@ -75,6 +79,13 @@ export function createTestApi(options: { now?: string } = {}): TestApi {
           return JSON.parse(text) as T;
         },
       };
+    },
+    async runTimer(factory) {
+      const now = clock.now().toISOString();
+      await factory(deps)(
+        { isPastDue: false, schedule: { adjustForDST: false }, scheduleStatus: { last: now, next: now, lastUpdated: now } },
+        context(),
+      );
     },
   };
 }

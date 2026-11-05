@@ -1,8 +1,9 @@
-import type { TranslatedFileResponse } from '@lingo-lens/shared';
+import type { ApiErrorResponse, TranslatedFileResponse } from '@lingo-lens/shared';
 import { describe, expect, it } from 'vitest';
 import { startDocumentTranslation } from '../testing/documentTranslation';
 import { createTestApi, type TestApi } from '../testing/testApi';
 import { createGetTranslatedFileHandler } from './getTranslatedFile';
+import { createSweepHandler } from './sweep';
 
 const getFile = (api: TestApi, id: string) =>
   api.call(createGetTranslatedFileHandler, { method: 'GET', path: `/api/translations/${id}/file`, params: { id } });
@@ -41,6 +42,19 @@ describe('GET /api/translations/{id}/file', () => {
     const t = await startDocumentTranslation(api);
 
     expect((await getFile(api, t.id)).status).toBe(404);
+  });
+
+  it('answers 410 expired once the sweep has deleted the Translated file', async () => {
+    const api = createTestApi();
+    const t = await startDocumentTranslation(api);
+    t.succeed();
+    api.clock.advance(61 * 60_000);
+    await api.runTimer(createSweepHandler);
+
+    const response = await getFile(api, t.id);
+
+    expect(response.status).toBe(410);
+    expect(response.json<ApiErrorResponse>()).toEqual({ error: 'expired' });
   });
 
   it('answers 404 for an id it did not issue', async () => {
