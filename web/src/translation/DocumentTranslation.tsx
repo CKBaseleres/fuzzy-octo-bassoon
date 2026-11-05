@@ -2,6 +2,7 @@ import {
   Button,
   Field,
   MessageBar,
+  MessageBarActions,
   MessageBarBody,
   Select,
   Text,
@@ -12,6 +13,8 @@ import {
 import type { Language } from '@lingo-lens/shared';
 import { useEffect, useId, useRef, useState, type ChangeEvent } from 'react';
 import { getLanguages } from '../api/client';
+import { FailureMessageBar } from './FailureMessageBar';
+import type { FailureAction } from './failureMessages';
 import { ACCEPT, checkSourceFile, type SourceFileCheck } from './sourceFile';
 import { useDocumentTranslation } from './useDocumentTranslation';
 
@@ -55,7 +58,7 @@ export function DocumentTranslation({ pollIntervalMs = 2000 }: { pollIntervalMs?
   const [file, setFile] = useState<File>();
   const [check, setCheck] = useState<SourceFileCheck>();
   const [targetLanguage, setTargetLanguage] = useState('');
-  const { state, start, saveAgain, reset } = useDocumentTranslation({ pollIntervalMs });
+  const { state, start, saveAgain, retryDownload, reset } = useDocumentTranslation({ pollIntervalMs });
   const resultHeading = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -83,6 +86,11 @@ export function DocumentTranslation({ pollIntervalMs = 2000 }: { pollIntervalMs?
   const canStart = !busy && file !== undefined && check?.ok === true && targetLanguage !== '';
   const onTranslate = () => {
     if (canStart && file && check.ok) void start({ file, extension: check.extension, targetLanguage });
+  };
+  const onFailureAction = (action: FailureAction) => {
+    if (state.phase !== 'failed') return;
+    if (action.kind === 'retry') void start(state.request);
+    else reset();
   };
 
   return (
@@ -121,34 +129,46 @@ export function DocumentTranslation({ pollIntervalMs = 2000 }: { pollIntervalMs?
         </>
       ) : null}
 
+      {/* Stays mounted (empty while failed) so later statuses are still announced. */}
       <Text role="status" aria-live="polite">
         {STATUS_TEXT[state.phase]}
       </Text>
+      {state.phase === 'failed' && (
+        <FailureMessageBar
+          // A new failure (e.g. after Try again) mounts a new bar, so focus moves again.
+          key={`${state.guid ?? ''}-${state.category}`}
+          failure={{ category: state.category, reason: state.reason, extension: state.request.extension }}
+          guid={state.guid}
+          onAction={onFailureAction}
+        />
+      )}
 
       {state.phase === 'ready' && (
         <div className={styles.result}>
           <h2 className={styles.heading} ref={resultHeading} tabIndex={-1}>
             Your translation is ready
           </h2>
-          <Text>
-            Saved as {state.saved?.fileName}. Your files have been deleted from Lingo Lens.
-          </Text>
+          {state.saved ? (
+            <Text>Saved as {state.saved.fileName}. Your files have been deleted from Lingo Lens.</Text>
+          ) : state.downloadFailed ? (
+            <MessageBar intent="error">
+              <MessageBarBody>Download failed.</MessageBarBody>
+              <MessageBarActions>
+                <Button onClick={retryDownload}>Try again</Button>
+              </MessageBarActions>
+            </MessageBar>
+          ) : null}
           <div className={styles.actions}>
-            <Button appearance="primary" onClick={saveAgain}>
-              Save again
-            </Button>
+            {state.saved && (
+              <Button appearance="primary" onClick={saveAgain}>
+                Save again
+              </Button>
+            )}
             <Button onClick={reset}>New Translation</Button>
           </div>
         </div>
       )}
 
-      {/* Ticket 09 replaces this with the per-category MessageBar, action, reference code and focus. */}
-      {state.phase === 'failed' && (
-        <MessageBar intent="error">
-          <MessageBarBody>Lingo Lens couldn’t translate this file.</MessageBarBody>
-          <Button onClick={reset}>New Translation</Button>
-        </MessageBar>
-      )}
     </section>
   );
 }

@@ -48,7 +48,8 @@ const deps: Deps = {
 app.hook.preInvocation((hook) => {
   if (hook.invocationContext.options.trigger.type !== 'httpTrigger') return;
   const handler = hook.functionHandler;
-  hook.functionHandler = (...args: unknown[]): unknown => withinRequestBudget(systemClock, (): unknown => handler(...args));
+  hook.functionHandler = (trigger, context) =>
+    withinRequestBudget(systemClock, () => handler(trigger, context) as unknown);
 });
 
 app.http('health', {
