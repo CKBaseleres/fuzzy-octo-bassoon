@@ -28,9 +28,8 @@ export const READ_SAS_MINUTES = 5;
  * to Documents and Images alike, and counts the Translation. Images then start
  * `prebuilt-read` (ticket 05); Documents start a batch job.
  *
- * Plug-in points for later tickets:
- *   - 09 (done): batch submit errors (`AzureServiceError`) -> classified failure, 502.
- *     10: do the same for `startRead` (`submitFailed(error, 'startRead', ...)`).
+ * Azure refusing the submit (`startBatch` or `startRead`, an `AzureServiceError`
+ * after retries) -> classified failure, 502, Source file deleted (tickets 09, 10).
  */
 export const createStartTranslationHandler: HttpHandlerFactory =
   (deps) =>
@@ -82,7 +81,18 @@ export const createStartTranslationHandler: HttpHandlerFactory =
     if (isImageExtension(extension)) {
       // Document Intelligence reads the Image itself, through a short-lived read-only SAS.
       const sourceUrl = await azure.blobs.createReadUrl(source, new Date(startedAt.getTime() + READ_SAS_MINUTES * 60_000));
-      const { operationId } = await azure.documentIntelligence.startRead({ sourceUrl });
+      let operationId: string;
+      try {
+        ({ operationId } = await azure.documentIntelligence.startRead({ sourceUrl }));
+      } catch (error) {
+        if (!(error instanceof AzureServiceError)) throw error;
+        return submitFailed(error, 'startRead', source, {
+          translationGuid: uploadId,
+          format: extension,
+          sizeInBytes: blob.sizeInBytes,
+          targetLanguage,
+        });
+      }
       logStarted();
       const id = encodeTranslationId({ kind: 'image', guid: uploadId, extension, operationId, startedAt, targetLanguage });
       const response: StartTranslationResponse = { id };

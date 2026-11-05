@@ -1,4 +1,5 @@
 import type { FailureCategory, FailureReason } from '@lingo-lens/shared';
+import { BAD_DIMENSIONS_MESSAGE, PROTECTED_MESSAGE } from './sourceFile';
 
 /** The one action a failure message may offer. */
 export type FailureAction =
@@ -10,6 +11,8 @@ export type FailureAction =
 export interface FailureMessage {
   /** `warning` only for No text found (spec: "Status, errors and accessibility"). */
   intent: 'error' | 'warning';
+  /** A short bold lead-in before the text, e.g. "No text found". */
+  title?: string;
   /** The message the staff member reads. The SPA owns every word; the API sends only codes. */
   text: string;
   action?: FailureAction;
@@ -29,9 +32,10 @@ const CHOOSE_ANOTHER_FILE: FailureAction = { kind: 'chooseAnotherFile', label: '
 const CANT_TRANSLATE: Record<FailureReason | 'generic', (d: FailureDetails) => string> = {
   generic: () =>
     'Lingo Lens couldn’t translate this file. It may be damaged, protected, or not the format its name suggests. Check it opens normally and try another file.',
-  passwordProtected: () => 'This file is password-protected or encrypted. Remove the protection and try again.',
+  // Same words as the browser checks (category 1, ticket 11).
+  passwordProtected: () => PROTECTED_MESSAGE,
   damaged: (d) => `This file looks damaged or isn’t a real ${d.extension.toUpperCase()} file.`,
-  badDimensions: () => 'This image is too small or too large to read.',
+  badDimensions: () => BAD_DIMENSIONS_MESSAGE,
 };
 
 /**
@@ -56,9 +60,10 @@ export const FAILURE_MESSAGES: { [C in FailureCategory]: (details: FailureDetail
     action: CHOOSE_ANOTHER_FILE,
   }),
   noTextFound: () => ({
-    // Ticket 10 owns the wording (spec: "Try a sharper, straighter photo...").
+    // Shown beside the Image, in place of the cards (ImageNoText.tsx).
     intent: 'warning',
-    text: 'Lingo Lens found no text in this image. Try a sharper, straighter photo. Some handwriting and languages can’t be read.',
+    title: 'No text found',
+    text: 'Try a sharper, straighter photo. Some handwriting and languages can’t be read.',
     action: CHOOSE_ANOTHER_FILE,
   }),
   serviceProblem: () => ({
