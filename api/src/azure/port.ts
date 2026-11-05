@@ -44,14 +44,19 @@ export class AzureServiceError extends Error {
   readonly httpStatus: number;
   readonly code: string | undefined;
   readonly innerErrorCode: string | undefined;
+  /** Azure's request id (`apim-request-id` / `X-RequestId`), for error logs. */
+  readonly requestId: string | undefined;
 
-  constructor(init: { service: AzureServiceName; httpStatus: number } & Partial<AzureErrorBody>) {
+  constructor(
+    init: { service: AzureServiceName; httpStatus: number; requestId?: string } & Partial<AzureErrorBody>,
+  ) {
     super(init.message ?? `${init.service} responded ${init.httpStatus}${init.code ? ` ${init.code}` : ''}`);
     this.name = 'AzureServiceError';
     this.service = init.service;
     this.httpStatus = init.httpStatus;
     this.code = init.code;
     this.innerErrorCode = init.innerErrorCode;
+    this.requestId = init.requestId;
   }
 }
 
@@ -77,6 +82,8 @@ export interface BatchStatus {
   error?: AzureErrorBody;
   /** The single document in the batch, once Azure reports it. */
   document?: BatchDocumentStatus;
+  /** Azure's request id for the status call (`apim-request-id` / `X-RequestId`), for error logs. */
+  requestId?: string;
 }
 
 export interface DocumentTranslationPort {

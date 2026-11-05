@@ -1,4 +1,5 @@
 import { HttpRequest, HttpResponse, InvocationContext, type LogLevel } from '@azure/functions';
+import { withinRequestBudget, withRetries } from '../azure/retries';
 import type { Deps, HttpHandlerFactory } from '../deps';
 import { createFakeAzureServices, type FakeAzureServices } from './fakeAzureServices';
 import { createFakeClock, type FakeClock } from './fakeClock';
@@ -45,7 +46,8 @@ export interface TestApi {
 export function createTestApi(options: { now?: string } = {}): TestApi {
   const clock = createFakeClock(options.now);
   const azure = createFakeAzureServices({ clock });
-  const deps: Deps = { azure, clock };
+  // Production wraps the real adapter the same way in index.ts.
+  const deps: Deps = { azure: withRetries(azure, clock), clock };
   const logs: LogEntry[] = [];
 
   return {
@@ -62,10 +64,11 @@ export function createTestApi(options: { now?: string } = {}): TestApi {
         params: request.params,
         body: request.body === undefined ? undefined : { string: JSON.stringify(request.body) },
       });
-      const result = await handler(httpRequest, new InvocationContext({
-          functionName: 'test',
-          logHandler: (level, ...args) => logs.push({ level, args }),
-        }));
+      const context = new InvocationContext({
+        functionName: 'test',
+        logHandler: (level, ...args) => logs.push({ level, args }),
+      });
+      const result = await withinRequestBudget(clock, () => handler(httpRequest, context));
       const response = result instanceof HttpResponse ? result : new HttpResponse(result);
       const text = await response.text();
       return {
