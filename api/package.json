@@ -12,7 +12,9 @@
     "start": "npm run build && func start"
   },
   "dependencies": {
-    "@azure/functions": "^4.17.0"
+    "@azure/functions": "^4.17.0",
+    "@azure/identity": "^4.13.1",
+    "@azure/storage-blob": "^12.32.0"
   },
   "devDependencies": {
     "@lingo-lens/shared": "*"

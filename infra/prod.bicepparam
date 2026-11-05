@@ -12,4 +12,8 @@ param hourlyPerIpQuota = 20
 
 // Still to fill in before the first prod deploy (later tickets add the params):
 //   - Budget alert recipients (ticket 08)
-//   - custom domain lingolens.<org-domain>
+//   - custom domain: set customDomain below (e.g. 'lingolens.<org-domain>'); it is
+//     added to the storage CORS origins
+
+// Fill in before the first prod deploy (host name only, no https://).
+param customDomain = ''
