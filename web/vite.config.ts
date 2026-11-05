@@ -3,6 +3,8 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [react()],
+  // Browser-check test fixtures (.docx, .pdf, .heic...), imported with `?inline` as data URLs.
+  assetsInclude: ['src/test/fixtures/**'],
   server: {
     // Local dev: the Functions host (`func start` in api/) listens on 7071.
     proxy: {
