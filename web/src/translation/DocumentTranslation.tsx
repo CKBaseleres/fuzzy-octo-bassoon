@@ -12,6 +12,7 @@ import {
 import type { Language } from '@lingo-lens/shared';
 import { useEffect, useId, useRef, useState, type ChangeEvent } from 'react';
 import { getLanguages } from '../api/client';
+import { ExpiredMessage } from './ExpiredMessage';
 import { RefusedMessage } from './refusal';
 import { ACCEPT, checkSourceFile, type SourceFileCheck } from './sourceFile';
 import { useDocumentTranslation } from './useDocumentTranslation';
@@ -56,7 +57,7 @@ export function DocumentTranslation({ pollIntervalMs = 2000 }: { pollIntervalMs?
   const [file, setFile] = useState<File>();
   const [check, setCheck] = useState<SourceFileCheck>();
   const [targetLanguage, setTargetLanguage] = useState('');
-  const { state, start, saveAgain, reset } = useDocumentTranslation({ pollIntervalMs });
+  const { state, start, saveAgain, reset, translateAgain } = useDocumentTranslation({ pollIntervalMs });
   const resultHeading = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -146,8 +147,10 @@ export function DocumentTranslation({ pollIntervalMs = 2000 }: { pollIntervalMs?
         </div>
       )}
 
+      {state.phase === 'failed' && state.category === 'expired' && <ExpiredMessage onTranslateAgain={translateAgain} />}
+
       {/* Ticket 09 replaces this with the per-category MessageBar, action, reference code and focus. */}
-      {state.phase === 'failed' && !refusal && (
+      {state.phase === 'failed' && state.category !== 'expired' && !refusal && (
         <MessageBar intent="error">
           <MessageBarBody>Lingo Lens couldn’t translate this file.</MessageBarBody>
           <Button onClick={reset}>New Translation</Button>

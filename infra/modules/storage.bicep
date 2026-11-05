@@ -3,8 +3,8 @@
 // Shared-key access is disabled: everything authenticates with Microsoft Entra ID.
 //
 // Extension points for later tickets:
-//   - ticket 07: the 1-day lifecycle rule (managementPolicies) for the source/target
-//     containers belongs here. CORS and soft delete / versioning / point-in-time
+//   - ticket 07 (done): the 1-day lifecycle rule (managementPolicies) for the
+//     source/target containers, below. CORS and soft delete / versioning / point-in-time
 //     restore live on blobServices 'default', which is declared in exactly ONE place:
 //     modules/blobService.bicep (deployed after the SWA, whose origin CORS needs).
 // The quota Table (ticket 08) is under `tableServices` below.
@@ -68,6 +68,38 @@ resource targetContainer 'Microsoft.Storage/storageAccounts/blobServices/contain
   name: 'target'
   properties: {
     publicAccess: 'None'
+  }
+}
+
+// Backstop to the 5-minute sweep Function (which deletes blobs after 60 minutes): if the
+// timer ever stops, nothing in `source` or `target` outlives about a day. Lifecycle
+// rules work in days and run at most once a day, so they cannot meet the hour on their own.
+resource lifecyclePolicy 'Microsoft.Storage/storageAccounts/managementPolicies@2024-01-01' = {
+  parent: storage
+  name: 'default'
+  properties: {
+    policy: {
+      rules: [
+        {
+          name: 'delete-translation-blobs-after-1-day'
+          enabled: true
+          type: 'Lifecycle'
+          definition: {
+            filters: {
+              blobTypes: ['blockBlob']
+              prefixMatch: ['${sourceContainer.name}/', '${targetContainer.name}/']
+            }
+            actions: {
+              baseBlob: {
+                delete: {
+                  daysAfterCreationGreaterThan: 1
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
   }
 }
 

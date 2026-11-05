@@ -1,5 +1,5 @@
 import { HttpRequest, HttpResponse, InvocationContext, type LogLevel } from '@azure/functions';
-import type { Deps, HttpHandlerFactory } from '../deps';
+import type { Deps, HttpHandlerFactory, TimerHandlerFactory } from '../deps';
 import { withApiHeaders } from '../guardrails/apiHeaders';
 import type { Limits } from '../guardrails/limits';
 import { createFakeAzureServices, type FakeAzureServices } from './fakeAzureServices';
@@ -37,6 +37,8 @@ export interface TestApi {
   deps: Deps;
   /** Builds the handler from its factory with this API's deps and invokes it like the Functions host would. */
   call(factory: HttpHandlerFactory, request: TestRequest): Promise<TestResponse>;
+  /** Builds a timer Function from its factory and fires it once, like the host would on schedule. */
+  runTimer(factory: TimerHandlerFactory): Promise<void>;
 }
 
 /**
@@ -52,6 +54,11 @@ export function createTestApi(options: { now?: string; limits?: Partial<Limits> 
   const azure = createFakeAzureServices({ clock });
   const deps: Deps = { azure, clock, limits: { ...TEST_LIMITS, ...options.limits } };
   const logs: LogEntry[] = [];
+  const context = () =>
+    new InvocationContext({
+      functionName: 'test',
+      logHandler: (level, ...args) => logs.push({ level, args }),
+    });
 
   return {
     azure,
@@ -67,10 +74,7 @@ export function createTestApi(options: { now?: string; limits?: Partial<Limits> 
         params: request.params,
         body: request.body === undefined ? undefined : { string: JSON.stringify(request.body) },
       });
-      const result = await handler(httpRequest, new InvocationContext({
-          functionName: 'test',
-          logHandler: (level, ...args) => logs.push({ level, args }),
-        }));
+      const result = await handler(httpRequest, context());
       // Mirrors the host: index.ts adds these to every HTTP result in a postInvocation hook.
       const withHeaders = withApiHeaders(result ?? {});
       const response = withHeaders instanceof HttpResponse ? withHeaders : new HttpResponse(withHeaders);
@@ -82,6 +86,13 @@ export function createTestApi(options: { now?: string; limits?: Partial<Limits> 
           return JSON.parse(text) as T;
         },
       };
+    },
+    async runTimer(factory) {
+      const now = clock.now().toISOString();
+      await factory(deps)(
+        { isPastDue: false, schedule: { adjustForDST: false }, scheduleStatus: { last: now, next: now, lastUpdated: now } },
+        context(),
+      );
     },
   };
 }
