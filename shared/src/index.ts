@@ -2,3 +2,4 @@
 // anything added here must be safe to bundle into both the Function App and the SPA.
 export type { HealthResponse } from './health';
 export * from './translations';
+export * from './limits';

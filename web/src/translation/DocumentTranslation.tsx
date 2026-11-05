@@ -15,6 +15,7 @@ import { useEffect, useId, useRef, useState, type ChangeEvent } from 'react';
 import { getLanguages } from '../api/client';
 import { ExpiredMessage } from './ExpiredMessage';
 import { ImageResult } from './ImageResult';
+import { RefusedMessage } from './refusal';
 import { ACCEPT, checkSourceFile, type SourceFileCheck } from './sourceFile';
 import { useDocumentTranslation } from './useDocumentTranslation';
 
@@ -87,6 +88,7 @@ export function DocumentTranslation({ pollIntervalMs = 2000 }: { pollIntervalMs?
   };
 
   const busy = state.phase === 'uploading' || state.phase === 'translating';
+  const refusal = state.phase === 'failed' ? state.refusal : undefined;
   const canStart = !busy && file !== undefined && check?.ok === true && targetLanguage !== '';
   const onTranslate = () => {
     if (canStart && file && check.ok) void start({ file, extension: check.extension, targetLanguage });
@@ -97,7 +99,9 @@ export function DocumentTranslation({ pollIntervalMs = 2000 }: { pollIntervalMs?
       className={mergeClasses(styles.form, state.phase === 'ready' && state.image && styles.wide)}
       aria-label="Translate a file"
     >
-      {state.phase === 'idle' || busy ? (
+      {refusal && <RefusedMessage refusal={refusal} />}
+
+      {state.phase === 'idle' || busy || refusal ? (
         <>
           <Field
             label={{ children: 'File to translate', htmlFor: fileInputId }}
@@ -167,7 +171,7 @@ export function DocumentTranslation({ pollIntervalMs = 2000 }: { pollIntervalMs?
       {state.phase === 'failed' && state.category === 'expired' && <ExpiredMessage onTranslateAgain={translateAgain} />}
 
       {/* Ticket 09 replaces this with the per-category MessageBar, action, reference code and focus. */}
-      {state.phase === 'failed' && state.category !== 'expired' && (
+      {state.phase === 'failed' && state.category !== 'expired' && !refusal && (
         <MessageBar intent="error">
           <MessageBarBody>Lingo Lens couldn’t translate this file.</MessageBarBody>
           <Button onClick={reset}>New Translation</Button>

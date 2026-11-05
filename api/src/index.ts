@@ -4,6 +4,7 @@ import { app } from '@azure/functions';
 import { DefaultAzureCredential } from '@azure/identity';
 import { createAzureServices } from './azure/azureServices';
 import { systemClock } from './clock';
+import { apiHeadersHook } from './guardrails/apiHeaders';
 import type { Deps } from './deps';
 import { createUploadHandler } from './functions/createUpload';
 import { createDeleteTranslationHandler } from './functions/deleteTranslation';
@@ -17,6 +18,12 @@ import { createSweepHandler, SWEEP_SCHEDULE } from './functions/sweep';
 /** App settings are read lazily so a missing one fails the request, not host start-up (and /api/health keeps working). */
 const setting = (name: string) => process.env[name] ?? '';
 
+/** A quota setting; anything but a whole number >= 0 fails safe to 0 (refuse every Translation). */
+const quota = (name: string) => {
+  const value = Number(setting(name).trim() || NaN);
+  return Number.isInteger(value) && value >= 0 ? value : 0;
+};
+
 const deps: Deps = {
   azure: createAzureServices(
     {
@@ -24,11 +31,22 @@ const deps: Deps = {
       blobEndpoint: setting('STORAGE_BLOB_ENDPOINT'),
       translatorEndpoint: setting('TRANSLATOR_ENDPOINT'),
       documentIntelligenceEndpoint: setting('DOCUMENT_INTELLIGENCE_ENDPOINT'),
+      tableEndpoint: setting('STORAGE_TABLE_ENDPOINT'),
+      quotaTableName: setting('QUOTA_TABLE_NAME'),
     },
     new DefaultAzureCredential(),
   ),
   clock: systemClock,
+  // Changing an app setting restarts the app, so reading these once is enough.
+  limits: {
+    translationsEnabled: setting('TRANSLATIONS_ENABLED').trim().toLowerCase() === 'true',
+    dailyQuota: quota('DAILY_TRANSLATION_QUOTA'),
+    hourlyPerIpQuota: quota('HOURLY_PER_IP_QUOTA'),
+  },
 };
+
+// X-Robots-Tag: noindex on every /api response (SWA globalHeaders skip the API).
+app.hook.postInvocation(apiHeadersHook);
 
 app.http('health', {
   route: 'health',

@@ -1,5 +1,7 @@
 import { HttpRequest, HttpResponse, InvocationContext, type LogLevel } from '@azure/functions';
 import type { Deps, HttpHandlerFactory, TimerHandlerFactory } from '../deps';
+import { withApiHeaders } from '../guardrails/apiHeaders';
+import type { Limits } from '../guardrails/limits';
 import { createFakeAzureServices, type FakeAzureServices } from './fakeAzureServices';
 import { createFakeClock, type FakeClock } from './fakeClock';
 
@@ -44,10 +46,13 @@ export interface TestApi {
  * Arrange Azure through `api.azure` (its `state`), then assert on the response
  * and on `api.azure.state`.
  */
-export function createTestApi(options: { now?: string } = {}): TestApi {
+/** Generous enough that tests about other things never hit a quota. */
+export const TEST_LIMITS: Limits = { translationsEnabled: true, dailyQuota: 1000, hourlyPerIpQuota: 1000 };
+
+export function createTestApi(options: { now?: string; limits?: Partial<Limits> } = {}): TestApi {
   const clock = createFakeClock(options.now);
   const azure = createFakeAzureServices({ clock });
-  const deps: Deps = { azure, clock };
+  const deps: Deps = { azure, clock, limits: { ...TEST_LIMITS, ...options.limits } };
   const logs: LogEntry[] = [];
   const context = () =>
     new InvocationContext({
@@ -70,7 +75,9 @@ export function createTestApi(options: { now?: string } = {}): TestApi {
         body: request.body === undefined ? undefined : { string: JSON.stringify(request.body) },
       });
       const result = await handler(httpRequest, context());
-      const response = result instanceof HttpResponse ? result : new HttpResponse(result);
+      // Mirrors the host: index.ts adds these to every HTTP result in a postInvocation hook.
+      const withHeaders = withApiHeaders(result ?? {});
+      const response = withHeaders instanceof HttpResponse ? withHeaders : new HttpResponse(withHeaders);
       const text = await response.text();
       return {
         status: response.status,
