@@ -39,6 +39,38 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  a11y:
+    name: Accessibility (axe, 320 / 768 / desktop)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+
+      # Builds the SPA, serves it with `vite preview` and runs axe on every screen
+      # state at each width, with /api and Blob Storage faked (web/e2e).
+      - run: npm run test:a11y
+        env:
+          CI: 'true'
+
+      - name: Upload the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+
   what-if:
     name: Bicep what-if against dev
     runs-on: ubuntu-latest
@@ -69,4 +101,3 @@ jobs:
             --template-file infra/main.bicep \
             --parameters infra/dev.bicepparam
 
-  # Later tickets add: axe checks (ticket 12).

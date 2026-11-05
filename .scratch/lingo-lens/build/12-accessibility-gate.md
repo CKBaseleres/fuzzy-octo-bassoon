@@ -8,7 +8,9 @@ Spec: [../spec.md](../spec.md) (Status, errors and accessibility)
 
 **Status:** ready-for-agent
 
-- [ ] axe runs in the PR workflow on every state: empty, picking, each rejection, uploading, translating, Document ready, Image result (with a block selected), each failure category, Expired and Refused
-- [ ] Every screen is checked at 320, 768 and desktop widths, with no horizontal scrolling and no zoom blocking
+- [x] axe runs in the PR workflow on every state: empty, picking, each rejection, uploading, translating, Document ready, Image result (with a block selected), each failure category, Expired and Refused
+- [x] Every screen is checked at 320, 768 and desktop widths, with no horizontal scrolling and no zoom blocking
 - [ ] A manual pass with NVDA + Edge and VoiceOver + Safari (HITL) covers the full Document and Image flows and each error, including the live-region announcements and focus moves; findings are fixed or ticketed
 - [ ] A checklist of the manual pass is recorded with its date and outcome
+
+**Agent notes (ticket-12):** the automated gate is `web/e2e/` (Playwright + `@axe-core/playwright` against `vite preview` of the real build, `/api` and Blob faked with `page.route`; 24 states × 320/768/1280). `npm run test:a11y` runs it, `npm run check` includes it, and `pr.yml` runs it as the `a11y` job. The checklist to fill in is [docs/accessibility/manual-screen-reader-pass.md](../../../docs/accessibility/manual-screen-reader-pass.md): the last two boxes stay open until a person runs it and records date and outcome.

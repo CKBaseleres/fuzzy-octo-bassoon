@@ -31,6 +31,17 @@ const useStyles = makeStyles({
     margin: 0,
     overflowWrap: 'anywhere',
   },
+  /**
+   * Fluent badges have a fixed height and don't wrap, so a long one spilled
+   * out of its outline at 320 px. Let it grow to two lines instead.
+   */
+  wrappingBadge: {
+    height: 'auto',
+    minHeight: '20px',
+    maxWidth: '100%',
+    whiteSpace: 'normal',
+    paddingBlock: '1px',
+  },
   spacer: { flexGrow: 1 },
   split: {
     display: 'grid',
@@ -257,7 +268,7 @@ export function ImageResult({
         <h2 className={styles.fileName} ref={headingRef} tabIndex={-1}>
           {fileName}
         </h2>
-        <Badge appearance="outline" color="informative">
+        <Badge appearance="outline" color="informative" className={styles.wrappingBadge}>
           {languagePair}
         </Badge>
         <Badge appearance="tint" color="success">
@@ -267,7 +278,7 @@ export function ImageResult({
           {blocks}
         </Badge>
         {result.isHandwritten && (
-          <Badge appearance="tint" color="warning">
+          <Badge appearance="tint" color="warning" className={styles.wrappingBadge}>
             Handwriting detected: check the translation
           </Badge>
         )}
