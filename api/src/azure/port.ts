@@ -124,9 +124,17 @@ export interface TextTranslation {
   detectedLanguage?: string;
 }
 
+export interface TargetLanguage {
+  code: string;
+  /** English display name. */
+  name: string;
+}
+
 export interface TextTranslationPort {
   /** One output element per input element, in the same order. */
   translate(request: { texts: string[]; targetLanguage: string }): Promise<TextTranslation[]>;
+  /** Every language Translator can translate into (the `translation` scope of `/languages`). */
+  listLanguages(): Promise<TargetLanguage[]>;
 }
 
 // --- Blob Storage -----------------------------------------------------------
@@ -137,13 +145,18 @@ export interface BlobInfo {
   createdOn: Date;
 }
 
+/**
+ * Blob names are `<container>/<path>`, e.g. `source/<guid>/file.pdf`
+ * (see `src/translations/blobNames.ts`).
+ */
 export interface BlobPort {
-  /** Write-only user delegation SAS URL for one blob. */
+  /** Write-only (create + write) user delegation SAS URL for one blob. */
   createUploadUrl(blobName: string, expiresOn: Date): Promise<string>;
   /** Read-only user delegation SAS URL for one blob. */
   createReadUrl(blobName: string, expiresOn: Date): Promise<string>;
   getBlob(blobName: string): Promise<BlobInfo | undefined>;
-  listBlobs(prefix?: string): Promise<BlobInfo[]>;
+  /** `prefix` starts with the container name, e.g. `source/` or `target/<guid>/`. */
+  listBlobs(prefix: string): Promise<BlobInfo[]>;
   /** Deleting a blob that does not exist is not an error. */
   deleteBlob(blobName: string): Promise<void>;
 }

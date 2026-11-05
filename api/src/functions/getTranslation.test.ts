@@ -1,0 +1,88 @@
+import type { TranslationStatusResponse } from '@lingo-lens/shared';
+import { describe, expect, it } from 'vitest';
+import { startDocumentTranslation } from '../testing/documentTranslation';
+import { createTestApi, type TestApi } from '../testing/testApi';
+import { createGetTranslationHandler } from './getTranslation';
+
+const poll = (api: TestApi, id: string) =>
+  api.call(createGetTranslationHandler, { method: 'GET', path: `/api/translations/${id}`, params: { id } });
+
+describe('GET /api/translations/{id}', () => {
+  it.each(['NotStarted', 'Running'] as const)('reports translating while the job is %s, keeping the Source file', async (status) => {
+    const api = createTestApi();
+    const t = await startDocumentTranslation(api);
+    t.job.status = status;
+
+    const response = await poll(api, t.id);
+
+    expect(response.status).toBe(200);
+    expect(response.json<TranslationStatusResponse>()).toEqual({ status: 'translating' });
+    expect(api.azure.state.blobs.has(t.sourceBlobName)).toBe(true);
+  });
+
+  it('reports ready once the job succeeds, and deletes the Source file but keeps the Translated file', async () => {
+    const api = createTestApi();
+    const t = await startDocumentTranslation(api);
+    t.succeed();
+
+    const response = await poll(api, t.id);
+
+    expect(response.json<TranslationStatusResponse>()).toEqual({ status: 'ready', kind: 'document' });
+    expect(api.azure.state.blobs.has(t.sourceBlobName)).toBe(false);
+    expect(api.azure.state.blobs.has(t.targetBlobName)).toBe(true);
+  });
+
+  it('stays ready on later polls after the Source file is gone', async () => {
+    const api = createTestApi();
+    const t = await startDocumentTranslation(api);
+    t.succeed();
+    await poll(api, t.id);
+
+    const again = await poll(api, t.id);
+
+    expect(again.json<TranslationStatusResponse>()).toEqual({ status: 'ready', kind: 'document' });
+  });
+
+  it.each(['Failed', 'ValidationFailed', 'Cancelled'] as const)(
+    'reports failed when the job ends %s, and deletes the Source file at once',
+    async (status) => {
+      const api = createTestApi();
+      const t = await startDocumentTranslation(api);
+      t.job.status = status;
+
+      const response = await poll(api, t.id);
+
+      expect(response.json<TranslationStatusResponse>()).toMatchObject({ status: 'failed' });
+      expect(api.azure.state.blobs.has(t.sourceBlobName)).toBe(false);
+    },
+  );
+
+  it.each(['', 'nonsense', Buffer.from('{"v":1,"k":"d","g":"x","e":"pdf","o":"a","s":0}').toString('base64url')])(
+    'answers 404 for an id it did not issue (%j)',
+    async (id) => {
+      const api = createTestApi();
+
+      const response = await poll(api, id);
+
+      expect(response.status).toBe(404);
+    },
+  );
+
+  it('logs the job status and duration when the job ends, with no filename or URL', async () => {
+    const api = createTestApi({ now: '2026-11-05T09:00:00.000Z' });
+    const t = await startDocumentTranslation(api, { extension: 'docx', targetLanguage: 'es' });
+    api.clock.advance(42_000);
+    t.succeed();
+
+    await poll(api, t.id);
+
+    expect(api.logs).toContainEqual({
+      level: 'information',
+      args: [
+        'translation.jobEnded',
+        { translationGuid: t.guid, format: 'docx', jobStatus: 'Succeeded', durationMs: 42_000 },
+      ],
+    });
+    expect(JSON.stringify(api.logs)).not.toMatch(/https?:|sig=/);
+  });
+});

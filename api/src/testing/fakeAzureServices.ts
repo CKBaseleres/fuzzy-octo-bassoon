@@ -32,6 +32,15 @@ export interface FakeAzureState {
   putBlob(name: string, sizeInBytes: number, createdOn?: Date): void;
 }
 
+/** What the fake's `listLanguages` returns unless scripted. */
+export const FAKE_TARGET_LANGUAGES = [
+  { code: 'en', name: 'English' },
+  { code: 'fr', name: 'French' },
+  { code: 'de', name: 'German' },
+  { code: 'es', name: 'Spanish' },
+  { code: 'ja', name: 'Japanese' },
+];
+
 type AnyAsyncFn = (...args: never[]) => Promise<unknown>;
 export type PortMethod<S extends AzureServiceName> = {
   [M in keyof AzureServices[S]]: AzureServices[S][M] extends AnyAsyncFn ? M : never;
@@ -186,13 +195,14 @@ function createInMemoryServices(clock: Clock): { state: FakeAzureState; ports: A
       // A recognisable stand-in translation: "[fr] Hello" for "Hello" into fr.
       translate: ({ texts, targetLanguage }) =>
         Promise.resolve(texts.map((text) => ({ text: `[${targetLanguage}] ${text}`, detectedLanguage: 'en' }))),
+      listLanguages: () => Promise.resolve(FAKE_TARGET_LANGUAGES.map((l) => ({ ...l }))),
     },
 
     blobs: {
       createUploadUrl: (blobName, expiresOn) => Promise.resolve(sasUrl(blobName, 'w', expiresOn)),
       createReadUrl: (blobName, expiresOn) => Promise.resolve(sasUrl(blobName, 'r', expiresOn)),
       getBlob: (blobName) => Promise.resolve(blobs.get(blobName)),
-      listBlobs: (prefix = '') => Promise.resolve([...blobs.values()].filter((b) => b.name.startsWith(prefix))),
+      listBlobs: (prefix) => Promise.resolve([...blobs.values()].filter((b) => b.name.startsWith(prefix))),
       deleteBlob: (blobName) => {
         blobs.delete(blobName);
         return Promise.resolve();
