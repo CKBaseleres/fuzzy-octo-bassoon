@@ -2,6 +2,7 @@ import type { HttpHandlerFactory } from '../deps';
 import { sourceBlobName } from '../translations/blobNames';
 import { isTerminal, mapBatchStatus } from '../translations/documentStatus';
 import { notFound } from '../translations/http';
+import { pollImageTranslation } from '../translations/imagePoll';
 import { logEvent } from '../translations/log';
 import { blobsGone, EXPIRED, expiresWhenBlobsGone, isUnknownOperation } from '../translations/expiry';
 import { decodeTranslationId } from '../translations/translationId';
@@ -12,14 +13,21 @@ import { decodeTranslationId } from '../translations/translationId';
  * Expired (ticket 07): the job is unknown to Translator, or the Translation's blobs
  * are all gone (the sweep or a DELETE removed them) and the job did not fail.
  *
- * Plug-in points: 05 adds the `ref.kind === 'image'` branch; 07 reports Expired when
+ * Images are polled by `pollImageTranslation` (translations/imagePoll.ts).
+ * Plug-in points: 07 reports Expired when
  * the blobs are gone; 09 adds the timeout (`ref.startedAt`), retries and classifier.
  */
 export const createGetTranslationHandler: HttpHandlerFactory =
-  ({ azure, clock }) =>
+  (deps) =>
   async (request, context) => {
+    const { azure, clock } = deps;
     const ref = decodeTranslationId(request.params.id);
-    if (!ref || ref.kind !== 'document') return notFound();
+    if (!ref) return notFound();
+    if (ref.kind === 'image') {
+      if (!ref.targetLanguage) return notFound();
+      const status = await pollImageTranslation(deps, { ...ref, targetLanguage: ref.targetLanguage }, context);
+      return { status: 200, jsonBody: status };
+    }
 
     let batch;
     try {

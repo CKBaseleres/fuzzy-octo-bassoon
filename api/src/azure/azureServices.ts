@@ -1,5 +1,6 @@
 import type { TokenCredential } from '@azure/identity';
 import { createBlobAdapter } from './blobAdapter';
+import { createDocumentIntelligenceAdapter, createTextTranslateAdapter } from './imageAdapters';
 import type { AzureServices } from './port';
 import { createDocumentTranslationAdapter, createLanguagesSource } from './translatorAdapter';
 
@@ -18,6 +19,7 @@ export interface AzureConfig {
  * identity (`DefaultAzureCredential`). Thin by design: it is not unit-tested
  * (Seam 1 uses the fake) and is exercised by hand in ticket 01.
  *
+ * Image pipeline adapters live in `imageAdapters.ts`.
  * Still unwired, and owned by later tickets (replace the `notWiredYet` entries):
  *   - 05: documentIntelligence.*, textTranslation.translate
  *   - 08: counters.*
@@ -31,13 +33,12 @@ export function createAzureServices(config: AzureConfig, credential: TokenCreden
       blobEndpoint: config.blobEndpoint,
       credential,
     }),
-    documentIntelligence: {
-      startRead: notWiredYet('documentIntelligence.startRead'),
-      getReadResult: notWiredYet('documentIntelligence.getReadResult'),
-      deleteReadResult: notWiredYet('documentIntelligence.deleteReadResult'),
-    },
+    documentIntelligence: createDocumentIntelligenceAdapter({
+      endpoint: config.documentIntelligenceEndpoint,
+      credential,
+    }),
     textTranslation: {
-      translate: notWiredYet('textTranslation.translate'),
+      translate: createTextTranslateAdapter({ translatorEndpoint: config.translatorEndpoint, credential }),
       listLanguages: createLanguagesSource(),
     },
     blobs: createBlobAdapter({

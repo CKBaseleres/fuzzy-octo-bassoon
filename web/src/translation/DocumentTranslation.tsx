@@ -6,6 +6,7 @@ import {
   Select,
   Text,
   makeStyles,
+  mergeClasses,
   tokens,
   typographyStyles,
 } from '@fluentui/react-components';
@@ -13,6 +14,7 @@ import type { Language } from '@lingo-lens/shared';
 import { useEffect, useId, useRef, useState, type ChangeEvent } from 'react';
 import { getLanguages } from '../api/client';
 import { ExpiredMessage } from './ExpiredMessage';
+import { ImageResult } from './ImageResult';
 import { ACCEPT, checkSourceFile, type SourceFileCheck } from './sourceFile';
 import { useDocumentTranslation } from './useDocumentTranslation';
 
@@ -22,6 +24,10 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     gap: tokens.spacingVerticalL,
     maxWidth: '36rem',
+  },
+  /** The Image result uses the full width (two columns). */
+  wide: {
+    maxWidth: 'none',
   },
   result: {
     display: 'flex',
@@ -87,7 +93,10 @@ export function DocumentTranslation({ pollIntervalMs = 2000 }: { pollIntervalMs?
   };
 
   return (
-    <section className={styles.form} aria-label="Translate a file">
+    <section
+      className={mergeClasses(styles.form, state.phase === 'ready' && state.image && styles.wide)}
+      aria-label="Translate a file"
+    >
       {state.phase === 'idle' || busy ? (
         <>
           <Field
@@ -126,7 +135,19 @@ export function DocumentTranslation({ pollIntervalMs = 2000 }: { pollIntervalMs?
         {STATUS_TEXT[state.phase]}
       </Text>
 
-      {state.phase === 'ready' && (
+      {state.phase === 'ready' && state.image && state.imageUrl && (
+        <ImageResult
+          fileName={state.request.file.name}
+          imageUrl={state.imageUrl}
+          result={state.image}
+          targetLanguage={state.request.targetLanguage}
+          languages={languages}
+          headingRef={resultHeading}
+          onNewTranslation={reset}
+        />
+      )}
+
+      {state.phase === 'ready' && !state.image && (
         <div className={styles.result}>
           <h2 className={styles.heading} ref={resultHeading} tabIndex={-1}>
             Your translation is ready

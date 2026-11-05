@@ -16,13 +16,13 @@ const COGNITIVE_SERVICES_SCOPE = 'https://cognitiveservices.azure.com/.default';
 const LANGUAGES_URL = 'https://api.cognitive.microsofttranslator.com/languages?api-version=3.0&scope=translation';
 const LANGUAGES_CACHE_MS = 24 * 60 * 60_000;
 
-interface RawError {
+export interface RawError {
   code?: string;
   message?: string;
   innerError?: { code?: string; message?: string };
 }
 
-const toErrorBody = (raw: RawError | undefined): AzureErrorBody | undefined =>
+export const toErrorBody = (raw: RawError | undefined): AzureErrorBody | undefined =>
   raw?.code
     ? {
         code: raw.code,
@@ -31,7 +31,7 @@ const toErrorBody = (raw: RawError | undefined): AzureErrorBody | undefined =>
       }
     : undefined;
 
-async function failure(service: AzureServiceName, response: Response): Promise<AzureServiceError> {
+export async function failure(service: AzureServiceName, response: Response): Promise<AzureServiceError> {
   let raw: RawError | undefined;
   try {
     raw = ((await response.json()) as { error?: RawError }).error;
