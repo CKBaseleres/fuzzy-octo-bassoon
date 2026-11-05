@@ -1,5 +1,6 @@
 import type { TokenCredential } from '@azure/identity';
 import { createBlobAdapter } from './blobAdapter';
+import { createCountersAdapter } from './countersAdapter';
 import type { AzureServices } from './port';
 import { createDocumentTranslationAdapter, createLanguagesSource } from './translatorAdapter';
 
@@ -11,6 +12,10 @@ export interface AzureConfig {
   translatorEndpoint: string;
   /** `DOCUMENT_INTELLIGENCE_ENDPOINT`. */
   documentIntelligenceEndpoint: string;
+  /** `STORAGE_TABLE_ENDPOINT`, e.g. `https://stx.table.core.windows.net/`. */
+  tableEndpoint: string;
+  /** `QUOTA_TABLE_NAME`: the Table that holds the quota counters. */
+  quotaTableName: string;
 }
 
 /**
@@ -20,7 +25,6 @@ export interface AzureConfig {
  *
  * Still unwired, and owned by later tickets (replace the `notWiredYet` entries):
  *   - 05: documentIntelligence.*, textTranslation.translate
- *   - 08: counters.*
  */
 export function createAzureServices(config: AzureConfig, credential: TokenCredential): AzureServices {
   const notWiredYet = (what: string) => () => Promise.reject(new Error(`Azure adapter not implemented yet: ${what}`));
@@ -45,9 +49,10 @@ export function createAzureServices(config: AzureConfig, credential: TokenCreden
       accountName: config.storageAccountName,
       credential,
     }),
-    counters: {
-      get: notWiredYet('counters.get'),
-      increment: notWiredYet('counters.increment'),
-    },
+    counters: createCountersAdapter({
+      tableEndpoint: config.tableEndpoint,
+      tableName: config.quotaTableName,
+      credential,
+    }),
   };
 }
