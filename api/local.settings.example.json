@@ -6,7 +6,14 @@
     "STORAGE_ACCOUNT_NAME": "",
     "STORAGE_BLOB_ENDPOINT": "https://<account>.blob.core.windows.net/",
     "TRANSLATOR_ENDPOINT": "https://<translator>.cognitiveservices.azure.com/",
-    "DOCUMENT_INTELLIGENCE_ENDPOINT": "https://<di>.cognitiveservices.azure.com/"
+    "DOCUMENT_INTELLIGENCE_ENDPOINT": "https://<di>.cognitiveservices.azure.com/",
+    "STORAGE_TABLE_ENDPOINT": "https://<account>.table.core.windows.net/",
+    "QUOTA_TABLE_NAME": "quotacounters",
+    "TRANSLATIONS_ENABLED": "true",
+    "DAILY_TRANSLATION_QUOTA": "50",
+    "HOURLY_PER_IP_QUOTA": "10",
+    "DOCUMENT_TIMEOUT_MINUTES": "15",
+    "IMAGE_TIMEOUT_MINUTES": "3"
   },
   "Host": {
     "CORS": "http://localhost:5173"

@@ -11,5 +11,10 @@ param translationsEnabled = true
 param dailyTranslationQuota = 50
 param hourlyPerIpQuota = 10
 
+// Budget: alerts at 50/80/100% of actual spend and 100% of forecast.
+// While the recipient list is empty, no Budget is deployed.
+param budgetAmount = 25
+param budgetAlertEmails = []
+
 // Dev uses the SWA default host name only.
 param customDomain = ''
