@@ -1,0 +1,30 @@
+name: Infra
+
+# Deploys infra/main.bicep on every merge to main that touches infra/:
+# dev automatically, then prod after a required reviewer approves the `prod`
+# GitHub Environment. Run it by hand (workflow_dispatch) for the first deploy.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'infra/**'
+      - '.github/workflows/infra.yml'
+      - '.github/workflows/_infra-deploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  dev:
+    uses: ./.github/workflows/_infra-deploy.yml
+    with:
+      environment: dev
+
+  prod:
+    needs: dev
+    uses: ./.github/workflows/_infra-deploy.yml
+    with:
+      environment: prod

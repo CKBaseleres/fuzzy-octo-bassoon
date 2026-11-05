@@ -1,0 +1,107 @@
+name: Deploy app (reusable)
+
+# Called by app.yml once per environment with the artifacts its build job
+# produced. Deploys the Function App first, then the SPA, then checks that
+# /api/health answers through the Static Web App (the only public route to the API).
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: dev or prod
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    name: Deploy (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ steps.names.outputs.url }}
+    # Shared with infra.yml so infra and app deploys to one environment never overlap.
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false
+    env:
+      RESOURCE_GROUP: rg-lingolens-${{ inputs.environment }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: api-package
+          path: api-package
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: web-dist
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      # Each resource group holds exactly one Function App and one Static Web App
+      # (infra/main.bicep), so look them up rather than hard-coding generated names.
+      - name: Resolve resource names
+        id: names
+        run: |
+          func=$(az functionapp list -g "$RESOURCE_GROUP" --query "[0].name" -o tsv)
+          swa=$(az staticwebapp list -g "$RESOURCE_GROUP" --query "[0].name" -o tsv)
+          host=$(az staticwebapp show -n "$swa" -g "$RESOURCE_GROUP" --query defaultHostname -o tsv)
+          if [ -z "$func" ] || [ -z "$swa" ]; then
+            echo "::error::No Function App or Static Web App in $RESOURCE_GROUP. Run the Infra workflow first."
+            exit 1
+          fi
+          {
+            echo "func=$func"
+            echo "swa=$swa"
+            echo "url=https://$host"
+          } >> "$GITHUB_OUTPUT"
+
+      # The SWA deployment token is fetched at run time, never stored.
+      - name: Fetch SWA deployment token
+        env:
+          SWA: ${{ steps.names.outputs.swa }}
+        run: |
+          token=$(az staticwebapp secrets list -n "$SWA" -g "$RESOURCE_GROUP" --query properties.apiKey -o tsv)
+          echo "::add-mask::$token"
+          echo "SWA_DEPLOYMENT_TOKEN=$token" >> "$GITHUB_ENV"
+
+      - name: Deploy Function App
+        uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ steps.names.outputs.func }}
+          package: api-package
+
+      - name: Deploy SPA
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ env.SWA_DEPLOYMENT_TOKEN }}
+          action: upload
+          app_location: web-dist
+          api_location: ''
+          output_location: ''
+          skip_app_build: true
+          skip_api_build: true
+
+      - name: Smoke test /api/health through the SWA
+        env:
+          URL: ${{ steps.names.outputs.url }}
+        run: |
+          for attempt in $(seq 1 20); do
+            if curl -fsS "$URL/api/health"; then
+              echo
+              echo "Healthy: $URL/api/health"
+              exit 0
+            fi
+            echo "Attempt $attempt failed; retrying in 15s"
+            sleep 15
+          done
+          echo "::error::$URL/api/health did not answer 200"
+          exit 1
