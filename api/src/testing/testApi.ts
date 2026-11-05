@@ -1,5 +1,6 @@
 import { HttpRequest, HttpResponse, InvocationContext, type LogLevel } from '@azure/functions';
-import type { Deps, HttpHandlerFactory, TimerHandlerFactory } from '../deps';
+import { withinRequestBudget, withRetries } from '../azure/retries';
+import { DEFAULT_TIMEOUTS, type Deps, type HttpHandlerFactory, type TimerHandlerFactory } from '../deps';
 import { withApiHeaders } from '../guardrails/apiHeaders';
 import type { Limits } from '../guardrails/limits';
 import { createFakeAzureServices, type FakeAzureServices } from './fakeAzureServices';
@@ -49,10 +50,21 @@ export interface TestApi {
 /** Generous enough that tests about other things never hit a quota. */
 export const TEST_LIMITS: Limits = { translationsEnabled: true, dailyQuota: 1000, hourlyPerIpQuota: 1000 };
 
-export function createTestApi(options: { now?: string; limits?: Partial<Limits> } = {}): TestApi {
+export function createTestApi(
+  options: { now?: string; limits?: Partial<Limits>; documentTimeoutMinutes?: number; imageTimeoutMinutes?: number } = {},
+): TestApi {
   const clock = createFakeClock(options.now);
   const azure = createFakeAzureServices({ clock });
-  const deps: Deps = { azure, clock, limits: { ...TEST_LIMITS, ...options.limits } };
+  // Production wraps the real adapter the same way in index.ts.
+  const deps: Deps = {
+    azure: withRetries(azure, clock),
+    clock,
+    limits: { ...TEST_LIMITS, ...options.limits },
+    timeouts: {
+      documentMinutes: options.documentTimeoutMinutes ?? DEFAULT_TIMEOUTS.documentMinutes,
+      imageMinutes: options.imageTimeoutMinutes ?? DEFAULT_TIMEOUTS.imageMinutes,
+    },
+  };
   const logs: LogEntry[] = [];
   const context = () =>
     new InvocationContext({
@@ -74,8 +86,9 @@ export function createTestApi(options: { now?: string; limits?: Partial<Limits> 
         params: request.params,
         body: request.body === undefined ? undefined : { string: JSON.stringify(request.body) },
       });
-      const result = await handler(httpRequest, context());
-      // Mirrors the host: index.ts adds these to every HTTP result in a postInvocation hook.
+      // Mirrors the host: index.ts gives each request a retry budget (preInvocation)
+      // and adds these headers to every HTTP result (postInvocation).
+      const result = await withinRequestBudget(clock, () => handler(httpRequest, context()));
       const withHeaders = withApiHeaders(result ?? {});
       const response = withHeaders instanceof HttpResponse ? withHeaders : new HttpResponse(withHeaders);
       const text = await response.text();

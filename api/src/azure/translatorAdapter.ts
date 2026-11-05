@@ -31,14 +31,32 @@ export const toErrorBody = (raw: RawError | undefined): AzureErrorBody | undefin
       }
     : undefined;
 
-export async function failure(service: AzureServiceName, response: Response): Promise<AzureServiceError> {
-  let raw: RawError | undefined;
+/** Azure's request id, for error logs. */
+export const requestIdOf = (response: Response) =>
+  response.headers.get('apim-request-id') ?? response.headers.get('x-requestid') ?? undefined;
+
+export async function failure(service: AzureServiceName, response: Response): Promise<AzureServiceError> {  let raw: RawError | undefined;
   try {
     raw = ((await response.json()) as { error?: RawError }).error;
   } catch {
     raw = undefined;
   }
-  return new AzureServiceError({ service, httpStatus: response.status, ...toErrorBody(raw) });
+  return new AzureServiceError({
+    service,
+    httpStatus: response.status,
+    requestId: requestIdOf(response),
+    ...toErrorBody(raw),
+  });
+}
+
+/** No response at all (DNS, connection reset...): status 0, which the retry wrapper retries. */
+async function send(service: AzureServiceName, target: URL | string, init: RequestInit): Promise<Response> {
+  try {
+    return await fetch(target, init);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new AzureServiceError({ service, httpStatus: 0, code: 'NetworkError', message: message.slice(0, 300) });
+  }
 }
 
 /**
@@ -66,7 +84,7 @@ export function createDocumentTranslationAdapter(options: {
   async function call(method: string, target: URL, body?: unknown): Promise<Response> {
     const token = await options.credential.getToken(COGNITIVE_SERVICES_SCOPE);
     if (!token) throw new Error('No token for Cognitive Services');
-    const response = await fetch(target, {
+    const response = await send('documentTranslation', target, {
       method,
       headers: {
         authorization: `Bearer ${token.token}`,
@@ -98,7 +116,9 @@ export function createDocumentTranslationAdapter(options: {
     },
 
     async getBatchStatus(operationId) {
-      const job = (await (await call('GET', url(`batches/${encodeURIComponent(operationId)}`))).json()) as {
+      const jobResponse = await call('GET', url(`batches/${encodeURIComponent(operationId)}`));
+      const requestId = requestIdOf(jobResponse);
+      const job = (await jobResponse.json()) as {
         status: BatchJobStatus;
         error?: RawError;
       };
@@ -118,7 +138,12 @@ export function createDocumentTranslationAdapter(options: {
         }
       }
       const error = toErrorBody(job.error);
-      return { status: job.status, ...(error ? { error } : {}), ...(document ? { document } : {}) };
+      return {
+        status: job.status,
+        ...(error ? { error } : {}),
+        ...(document ? { document } : {}),
+        ...(requestId ? { requestId } : {}),
+      };
     },
 
     async cancelBatch(operationId) {
@@ -154,7 +179,7 @@ export function createLanguagesSource(): () => Promise<TargetLanguage[]> {
   let cached: { at: number; languages: TargetLanguage[] } | undefined;
   return async () => {
     if (cached && Date.now() - cached.at < LANGUAGES_CACHE_MS) return cached.languages;
-    const response = await fetch(LANGUAGES_URL, { headers: { 'accept-language': 'en' } });
+    const response = await send('textTranslation', LANGUAGES_URL, { headers: { 'accept-language': 'en' } });
     if (!response.ok) throw await failure('textTranslation', response);
     const body = (await response.json()) as { translation?: Record<string, { name: string }> };
     const languages = Object.entries(body.translation ?? {}).map(([code, { name }]) => ({ code, name }));

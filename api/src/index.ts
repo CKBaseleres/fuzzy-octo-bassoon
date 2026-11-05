@@ -3,9 +3,10 @@
 import { app } from '@azure/functions';
 import { DefaultAzureCredential } from '@azure/identity';
 import { createAzureServices } from './azure/azureServices';
+import { withinRequestBudget, withRetries } from './azure/retries';
 import { systemClock } from './clock';
 import { apiHeadersHook } from './guardrails/apiHeaders';
-import type { Deps } from './deps';
+import { DEFAULT_TIMEOUTS, type Deps } from './deps';
 import { createUploadHandler } from './functions/createUpload';
 import { createDeleteTranslationHandler } from './functions/deleteTranslation';
 import { createGetLanguagesHandler } from './functions/getLanguages';
@@ -24,17 +25,27 @@ const quota = (name: string) => {
   return Number.isInteger(value) && value >= 0 ? value : 0;
 };
 
+/** A positive number of minutes, or the spec's default. */
+const minutes = (name: string, fallback: number) => {
+  const value = Number(setting(name));
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+};
+
 const deps: Deps = {
-  azure: createAzureServices(
-    {
-      storageAccountName: setting('STORAGE_ACCOUNT_NAME'),
-      blobEndpoint: setting('STORAGE_BLOB_ENDPOINT'),
-      translatorEndpoint: setting('TRANSLATOR_ENDPOINT'),
-      documentIntelligenceEndpoint: setting('DOCUMENT_INTELLIGENCE_ENDPOINT'),
-      tableEndpoint: setting('STORAGE_TABLE_ENDPOINT'),
-      quotaTableName: setting('QUOTA_TABLE_NAME'),
-    },
-    new DefaultAzureCredential(),
+  // Silent retries of Azure 429/5xx; see azure/retries.ts.
+  azure: withRetries(
+    createAzureServices(
+      {
+        storageAccountName: setting('STORAGE_ACCOUNT_NAME'),
+        blobEndpoint: setting('STORAGE_BLOB_ENDPOINT'),
+        translatorEndpoint: setting('TRANSLATOR_ENDPOINT'),
+        documentIntelligenceEndpoint: setting('DOCUMENT_INTELLIGENCE_ENDPOINT'),
+        tableEndpoint: setting('STORAGE_TABLE_ENDPOINT'),
+        quotaTableName: setting('QUOTA_TABLE_NAME'),
+      },
+      new DefaultAzureCredential(),
+    ),
+    systemClock,
   ),
   clock: systemClock,
   // Changing an app setting restarts the app, so reading these once is enough.
@@ -43,7 +54,19 @@ const deps: Deps = {
     dailyQuota: quota('DAILY_TRANSLATION_QUOTA'),
     hourlyPerIpQuota: quota('HOURLY_PER_IP_QUOTA'),
   },
+  timeouts: {
+    documentMinutes: minutes('DOCUMENT_TIMEOUT_MINUTES', DEFAULT_TIMEOUTS.documentMinutes),
+    imageMinutes: minutes('IMAGE_TIMEOUT_MINUTES', DEFAULT_TIMEOUTS.imageMinutes),
+  },
 };
+
+// Every HTTP invocation gets its own 45-second retry budget (SWA's /api limit).
+app.hook.preInvocation((hook) => {
+  if (hook.invocationContext.options.trigger.type !== 'httpTrigger') return;
+  const handler = hook.functionHandler;
+  hook.functionHandler = (trigger, context) =>
+    withinRequestBudget(systemClock, () => handler(trigger, context) as unknown);
+});
 
 // X-Robots-Tag: noindex on every /api response (SWA globalHeaders skip the API).
 app.hook.postInvocation(apiHeadersHook);

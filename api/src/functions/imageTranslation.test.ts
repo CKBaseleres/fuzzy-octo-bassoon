@@ -151,9 +151,10 @@ describe('Image Translation: GET /api/translations/{id}', () => {
   it('keeps the Image and the analyze result when Translator fails, so the next poll can try again', async () => {
     const api = createTestApi();
     const t = await startImageTranslation(api);
-    api.azure
-      .script('textTranslation', 'translate')
-      .rejectsOnce(new AzureServiceError({ service: 'textTranslation', httpStatus: 503, code: 'ServiceUnavailable' }));
+    // Still failing after the silent retries (1 attempt + 3 retries, ticket 09).
+    const busy = new AzureServiceError({ service: 'textTranslation', httpStatus: 503, code: 'ServiceUnavailable' });
+    const translate = api.azure.script('textTranslation', 'translate');
+    for (let i = 0; i < 4; i++) translate.rejectsOnce(busy);
     t.succeed(CAFE_SIGN);
 
     await expect(poll(api, t.id)).rejects.toThrow();

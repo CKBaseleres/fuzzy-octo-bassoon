@@ -4,11 +4,15 @@ import {
   translatedExtension,
   type StartTranslationResponse,
 } from '@lingo-lens/shared';
+import type { HttpResponseInit } from '@azure/functions';
+import { AzureServiceError } from '../azure/port';
 import type { HttpHandlerFactory } from '../deps';
+import { classify, requestFailureInput } from '../translations/classifier';
+import { failedResponse } from '../translations/documentStatus';
 import { sourceBlobName, targetBlobName } from '../translations/blobNames';
 import { GUID_PATTERN, badRequest, normaliseExtension, readJsonObject } from '../translations/http';
 import { admitTranslation } from '../guardrails/admitTranslation';
-import { logEvent } from '../translations/log';
+import { logEvent, logFailure, type TranslationLogFields } from '../translations/log';
 import { encodeTranslationId } from '../translations/translationId';
 
 /** Translator language codes: `fr`, `zh-Hans`, `sr-Latn-ME`... */
@@ -25,12 +29,28 @@ export const READ_SAS_MINUTES = 5;
  * `prebuilt-read` (ticket 05); Documents start a batch job.
  *
  * Plug-in points for later tickets:
- *   - 09: submit errors (`AzureServiceError`) -> classified failure
+ *   - 09 (done): batch submit errors (`AzureServiceError`) -> classified failure, 502.
+ *     10: do the same for `startRead` (`submitFailed(error, 'startRead', ...)`).
  */
 export const createStartTranslationHandler: HttpHandlerFactory =
   (deps) =>
   async (request, context) => {
     const { azure, clock } = deps;
+
+    /** Azure refused the submit (after retries): classify, log, delete the Source file, answer 502. */
+    const submitFailed = async (
+      error: AzureServiceError,
+      operation: string,
+      source: string,
+      logBase: TranslationLogFields,
+    ): Promise<HttpResponseInit> => {
+      const input = requestFailureInput(error, operation);
+      const classification = classify(input);
+      logFailure(context, logBase, input, classification, error);
+      await azure.blobs.deleteBlob(source).catch(() => undefined);
+      return { status: 502, jsonBody: failedResponse(classification) };
+    };
+
     const body = await readJsonObject(request);
     const uploadId = body?.uploadId;
     const extension = normaliseExtension(body?.extension);
@@ -69,11 +89,22 @@ export const createStartTranslationHandler: HttpHandlerFactory =
       return { status: 202, jsonBody: response };
     }
 
-    const { operationId } = await azure.documentTranslation.startBatch({
-      sourceBlobName: source,
-      targetBlobName: targetBlobName(uploadId, translatedExtension(extension)),
-      targetLanguage,
-    });
+    let operationId: string;
+    try {
+      ({ operationId } = await azure.documentTranslation.startBatch({
+        sourceBlobName: source,
+        targetBlobName: targetBlobName(uploadId, translatedExtension(extension)),
+        targetLanguage,
+      }));
+    } catch (error) {
+      if (!(error instanceof AzureServiceError)) throw error;
+      return submitFailed(error, 'startBatch', source, {
+        translationGuid: uploadId,
+        format: extension,
+        sizeInBytes: blob.sizeInBytes,
+        targetLanguage,
+      });
+    }
 
     logStarted();
     const id = encodeTranslationId({ kind: 'document', guid: uploadId, extension, operationId, startedAt });

@@ -150,6 +150,13 @@ export type TranslationStatusResponse =
   | ({ status: 'ready'; kind: 'image' } & ImageTranslationResult)
   | { status: 'failed'; category: FailureCategory; reason?: FailureReason };
 
+/**
+ * A failed Translation. The poll returns it with 200; `POST /api/translations`
+ * returns it with **502** when Azure refuses the batch submit (the Source file is
+ * then already deleted, and there is no Translation id to DELETE).
+ */
+export type FailedTranslationResponse = Extract<TranslationStatusResponse, { status: 'failed' }>;
+
 // --- GET /api/translations/{id}/file --------------------------------------------
 
 export interface TranslatedFileResponse {

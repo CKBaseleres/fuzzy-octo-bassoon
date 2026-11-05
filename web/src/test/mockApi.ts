@@ -1,6 +1,7 @@
 import type {
   ApiErrorResponse,
   CreateUploadResponse,
+  FailedTranslationResponse,
   HealthResponse,
   LanguagesResponse,
   QuotaLimit,
@@ -34,6 +35,13 @@ export interface RecordedRequest {
   body: string;
 }
 
+/** An answer that is an HTTP failure instead of a body, e.g. `{ httpStatus: 503 }`. */
+export interface HttpFailure {
+  httpStatus: number;
+}
+
+const isFailure = (answer: object): answer is HttpFailure => 'httpStatus' in answer;
+
 export const mockApi = {
   health(body: HealthResponse, init?: ResponseInit) {
     server.use(http.get<never, never, HealthResponse>('/api/health', () => HttpResponse.json(body, init)));
@@ -46,18 +54,23 @@ export const mockApi = {
     server.use(http.get<never, never, LanguagesResponse>('/api/languages', () => HttpResponse.json({ languages })));
   },
 
-  /** `POST /api/translations/uploads`. Defaults to a SAS on the fake blob origin. */
-  createUpload(body: Partial<CreateUploadResponse> = {}) {
-    const uploadId = body.uploadId ?? '3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b';
+  /**
+   * `POST /api/translations/uploads`. Defaults to a SAS on the fake blob origin.
+   * Pass several upload ids to hand out a new GUID per call (the last one repeats).
+   */
+  createUpload(body: Partial<CreateUploadResponse> = {}, ...moreUploadIds: string[]) {
+    const ids = [body.uploadId ?? '3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b', ...moreUploadIds];
+    let i = 0;
     server.use(
-      http.post<never, never, CreateUploadResponse>('/api/translations/uploads', () =>
-        HttpResponse.json({
-          uploadId,
+      http.post<never, never, CreateUploadResponse>('/api/translations/uploads', () => {
+        const uploadId = ids[Math.min(i++, ids.length - 1)]!;
+        return HttpResponse.json({
           uploadUrl: `${FAKE_BLOB_ORIGIN}/source/${uploadId}/file.bin?sp=cw&sig=fake`,
           expiresOn: '2030-01-01T00:00:00.000Z',
           ...body,
-        }),
-      ),
+          uploadId,
+        });
+      }),
     );
   },
 
@@ -85,9 +98,13 @@ export const mockApi = {
     );
   },
 
-  /** The browser's direct `PUT` of the Source file to Blob Storage. */
-  blobUpload(status = 201) {
-    server.use(http.put(`${FAKE_BLOB_ORIGIN}/*`, () => new HttpResponse(null, { status })));
+  /** The browser's direct `PUT` of the Source file to Blob Storage. Each call gets the next status; the last repeats. */
+  blobUpload(...statuses: number[]) {
+    const answers = statuses.length ? statuses : [201];
+    let i = 0;
+    server.use(
+      http.put(`${FAKE_BLOB_ORIGIN}/*`, () => new HttpResponse(null, { status: answers[Math.min(i++, answers.length - 1)] })),
+    );
   },
 
   startTranslation(body: StartTranslationResponse = { id: 'translation-1' }) {
@@ -96,26 +113,41 @@ export const mockApi = {
     );
   },
 
-  /** Each poll gets the next status; the last one repeats. */
-  translationStatus(...statuses: TranslationStatusResponse[]) {
-    let i = 0;
+  /** `POST /api/translations` refused: Azure refused the submit (502 + a failed body), or any other status. */
+  startTranslationFails(httpStatus: number, body?: FailedTranslationResponse) {
     server.use(
-      http.get<{ id: string }, never, TranslationStatusResponse>('/api/translations/:id', () =>
-        HttpResponse.json(statuses[Math.min(i++, statuses.length - 1)]),
+      http.post('/api/translations', () =>
+        body ? HttpResponse.json(body, { status: httpStatus }) : new HttpResponse(null, { status: httpStatus }),
       ),
     );
   },
 
-  translatedFile(body: Partial<TranslatedFileResponse> = {}) {
+  /** Each poll gets the next answer (a status, or `{ httpStatus }` for a failed poll); the last one repeats. */
+  translationStatus(...answers: (TranslationStatusResponse | HttpFailure)[]) {
+    let i = 0;
     server.use(
-      http.get<{ id: string }, never, TranslatedFileResponse>('/api/translations/:id/file', () =>
-        HttpResponse.json({
+      http.get<{ id: string }, never, TranslationStatusResponse>('/api/translations/:id', () => {
+        const answer = answers[Math.min(i++, answers.length - 1)]!;
+        return isFailure(answer) ? new HttpResponse(null, { status: answer.httpStatus }) : HttpResponse.json(answer);
+      }),
+    );
+  },
+
+  /** Each call gets the next answer (a partial body, or `{ httpStatus }`); the last one repeats. */
+  translatedFile(...answers: (Partial<TranslatedFileResponse> | HttpFailure)[]) {
+    const all = answers.length ? answers : [{}];
+    let i = 0;
+    server.use(
+      http.get<{ id: string }, never, TranslatedFileResponse>('/api/translations/:id/file', () => {
+        const answer = all[Math.min(i++, all.length - 1)]!;
+        if (isFailure(answer)) return new HttpResponse(null, { status: answer.httpStatus });
+        return HttpResponse.json({
           url: `${FAKE_BLOB_ORIGIN}/target/guid/file.pdf?sp=r&sig=fake`,
           expiresOn: '2030-01-01T00:00:00.000Z',
           extension: 'pdf',
-          ...body,
-        }),
-      ),
+          ...answer,
+        });
+      }),
     );
   },
 
@@ -128,9 +160,18 @@ export const mockApi = {
     );
   },
 
-  /** The browser's direct `GET` of the Translated file from Blob Storage. */
-  blobDownload(content = 'translated bytes') {
-    server.use(http.get(`${FAKE_BLOB_ORIGIN}/*`, () => new HttpResponse(content, { status: 200 })));
+  /** The browser's direct `GET` of the Translated file from Blob Storage. Pass `{ httpStatus }` answers first to fail. */
+  blobDownload(...answers: (string | HttpFailure)[]) {
+    const all = answers.length ? answers : ['translated bytes'];
+    let i = 0;
+    server.use(
+      http.get(`${FAKE_BLOB_ORIGIN}/*`, () => {
+        const answer = all[Math.min(i++, all.length - 1)]!;
+        return typeof answer === 'string'
+          ? new HttpResponse(answer, { status: 200 })
+          : new HttpResponse(null, { status: answer.httpStatus });
+      }),
+    );
   },
 
   deleteTranslation() {
