@@ -16,6 +16,7 @@ import {
   startTranslation,
   uploadToBlob,
 } from '../api/client';
+import { readRefusal, type Refusal } from './refusal';
 import { saveFile } from './saveFile';
 import { translatedFileName } from './sourceFile';
 
@@ -44,7 +45,15 @@ export type TranslationState =
       /** Image: an object URL of the Source file, so it is shown without being downloaded back. */
       imageUrl?: string;
     }
-  | { phase: 'failed'; request: TranslationRequest; id?: string; category: FailureCategory; reason?: FailureReason };
+  | {
+      phase: 'failed';
+      request: TranslationRequest;
+      id?: string;
+      category: FailureCategory;
+      reason?: FailureReason;
+      /** Set with category `refused`: a quota or the kill switch said no (ticket 08). */
+      refusal?: Refusal;
+    };
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -123,9 +132,12 @@ export function useDocumentTranslation({ pollIntervalMs }: { pollIntervalMs: num
         // Only after a successful save: the Translated file now lives in memory only.
         await deleteTranslation(id);
       } catch (error) {
+        const refusal = await readRefusal(error);
+        if (!live()) return;
         // 410 from the file request: the sweep removed the Translation's blobs (ticket 07).
         const category = error instanceof HttpError && error.status === 410 ? 'expired' : 'serviceProblem';
-        if (live()) setState({ phase: 'failed', request, id, category });
+        if (refusal) setState({ phase: 'failed', request, category: 'refused', refusal });
+        else setState({ phase: 'failed', request, id, category });
       }
     },
     [pollIntervalMs, releaseImage],

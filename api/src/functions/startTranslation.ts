@@ -7,6 +7,7 @@ import {
 import type { HttpHandlerFactory } from '../deps';
 import { sourceBlobName, targetBlobName } from '../translations/blobNames';
 import { GUID_PATTERN, badRequest, normaliseExtension, readJsonObject } from '../translations/http';
+import { admitTranslation } from '../guardrails/admitTranslation';
 import { logEvent } from '../translations/log';
 import { encodeTranslationId } from '../translations/translationId';
 
@@ -19,14 +20,17 @@ export const READ_SAS_MINUTES = 5;
 /**
  * POST /api/translations: starts the Translation of an uploaded Source file.
  *
- * Plug-in points for later tickets, in this order before `startBatch`:
- *   - 08: kill switch, quota counting, and the real-size check (delete if oversized)
- *   - 05 (done): the `isImageExtension(extension)` branch starts `prebuilt-read` instead
+ * `admitTranslation` (ticket 08) applies the size check, kill switch and quotas
+ * to Documents and Images alike, and counts the Translation. Images then start
+ * `prebuilt-read` (ticket 05); Documents start a batch job.
+ *
+ * Plug-in points for later tickets:
  *   - 09: submit errors (`AzureServiceError`) -> classified failure
  */
 export const createStartTranslationHandler: HttpHandlerFactory =
-  ({ azure, clock }) =>
+  (deps) =>
   async (request, context) => {
+    const { azure, clock } = deps;
     const body = await readJsonObject(request);
     const uploadId = body?.uploadId;
     const extension = normaliseExtension(body?.extension);
@@ -42,6 +46,9 @@ export const createStartTranslationHandler: HttpHandlerFactory =
     const source = sourceBlobName(uploadId, extension);
     const blob = await azure.blobs.getBlob(source);
     if (!blob) return badRequest('Source file not uploaded');
+
+    const refusal = await admitTranslation(deps, request, blob, extension);
+    if (refusal) return refusal;
 
     const startedAt = clock.now();
     const logStarted = () =>
