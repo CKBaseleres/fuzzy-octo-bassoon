@@ -217,3 +217,63 @@ describe('Document Translation: saving', () => {
     expect(requests).toHaveLength(before);
   });
 });
+
+describe('Document Translation: expired', () => {
+  const EXPIRED_TEXT = 'This translation has expired, please start again.';
+
+  it('shows the expired message with Translate again when a poll finds the Translation expired, and moves focus to it', async () => {
+    renderScreen();
+    arrangeHappyPath();
+    mockApi.translationStatus({ status: 'translating' }, { status: 'failed', category: 'expired' });
+
+    await translate(fileOf('Report.pdf'));
+
+    const message = await screen.findByText(EXPIRED_TEXT);
+    expect(screen.getByRole('button', { name: 'Translate again' })).toBeInTheDocument();
+    await waitFor(() => expect(message.closest('[tabindex="-1"]')).toHaveFocus());
+  });
+
+  it('shows the expired message when the Translated file is already gone', async () => {
+    renderScreen();
+    arrangeHappyPath();
+    mockApi.translatedFileExpired();
+    const saves = captureSaves();
+
+    await translate(fileOf('Report.pdf'));
+
+    expect(await screen.findByText(EXPIRED_TEXT)).toBeInTheDocument();
+    expect(saves).toHaveLength(0);
+  });
+
+  it('translates again with the same in-memory file and target language, without picking it again', async () => {
+    renderScreen();
+    arrangeHappyPath();
+    mockApi.translationStatus({ status: 'failed', category: 'expired' });
+    const saves = captureSaves();
+    const requests = mockApi.recordRequests();
+    const user = await translate(fileOf('Report.pdf'), 'German');
+    await screen.findByText(EXPIRED_TEXT);
+    mockApi.translationStatus({ status: 'ready', kind: 'document' });
+
+    await user.click(screen.getByRole('button', { name: 'Translate again' }));
+
+    await waitFor(() => expect(saves.map((s) => s.name)).toEqual(['Report.de.pdf']));
+    const starts = requests.filter((r) => r.method === 'POST' && r.url === '/api/translations');
+    expect(starts.map((r) => (JSON.parse(r.body) as { targetLanguage: string }).targetLanguage)).toEqual(['de', 'de']);
+    expect(requests.filter((r) => r.method === 'PUT')).toHaveLength(2);
+  });
+
+  it('keeps nothing in sessionStorage or localStorage, so a refresh abandons the Translation', async () => {
+    renderScreen();
+    arrangeHappyPath();
+    mockApi.translationStatus({ status: 'translating' });
+    sessionStorage.clear();
+    localStorage.clear();
+
+    await translate(fileOf('Report.pdf'));
+    await screen.findByText('Translating…');
+
+    expect(sessionStorage).toHaveLength(0);
+    expect(localStorage).toHaveLength(0);
+  });
+});
