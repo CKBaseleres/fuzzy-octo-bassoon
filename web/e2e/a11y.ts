@@ -42,8 +42,9 @@ export async function expectAccessibleAtEveryWidth(page: Page) {
   const start = page.viewportSize();
   for (const width of WIDTHS) {
     await page.setViewportSize({ width, height: width === 320 ? 640 : 900 });
-    // Let layout and any media queries settle.
-    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    // Reading layout below forces a synchronous reflow (media queries included), so no
+    // animation-frame wait: rAF can stall in headless Chromium when no frames are drawn.
+    await page.waitForFunction((w) => window.innerWidth === w, width);
 
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow, `horizontal scroll at ${width}px`).toBeLessThanOrEqual(0);
@@ -51,7 +52,10 @@ export async function expectAccessibleAtEveryWidth(page: Page) {
     const viewport = (await page.locator('meta[name="viewport"]').getAttribute('content')) ?? '';
     expect(viewport, 'zoom must not be blocked').not.toMatch(/user-scalable\s*=\s*(no|0)|maximum-scale\s*=\s*1(\.0*)?\b/);
 
-    const { violations } = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+    // Legacy mode runs axe in this page. The default merges results in a second blank
+    // page, which hung for ~15 min on a loaded machine; it is only needed for
+    // cross-origin iframes, and the SPA has none.
+    const { violations } = await new AxeBuilder({ page }).withTags(WCAG_TAGS).setLegacyMode(true).analyze();
     expect(violations, `axe at ${width}px:\n${describe(violations)}`).toEqual([]);
   }
   // axe only reports a dangling aria-labelledby as "needs review"; a group or

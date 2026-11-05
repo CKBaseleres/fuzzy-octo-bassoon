@@ -13,6 +13,8 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: 0,
+  // Each test runs axe at three widths (and some pick 20-40 MB files): 30 s is tight on a busy machine.
+  timeout: 90_000,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never', outputFolder: '../playwright-report' }]] : 'list',
   outputDir: '../test-results',
   use: {
