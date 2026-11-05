@@ -8,6 +8,7 @@ import {
   type DocumentExtension,
   type ImageExtension,
 } from '@lingo-lens/shared';
+import { readImageDimensions, type Dimensions } from './imageDimensions';
 
 /**
  * Browser checks (category 1: Rejected before upload): type, size, empty, then
@@ -33,6 +34,8 @@ export const baseNameOf = (name: string) => {
 
 /** Category 1 wording, owned here (ticket 09's category 4 `passwordProtected` can reuse it). */
 export const PROTECTED_MESSAGE = 'This file is password-protected or encrypted. Remove the protection and try again.';
+/** Same words as category 4 `badDimensions` (ticket 09 owns that one; keep them in step). */
+export const BAD_DIMENSIONS_MESSAGE = 'This image is too small or too large to read.';
 
 export async function checkSourceFile(file: File): Promise<SourceFileCheck> {
   const check = checkTypeAndSize(file);
@@ -40,8 +43,20 @@ export async function checkSourceFile(file: File): Promise<SourceFileCheck> {
   if (check.kind === 'document' && (await isProtected(file, check.extension))) {
     return { ok: false, message: PROTECTED_MESSAGE };
   }
+  if (check.kind === 'image' && !withinImageLimits(await readImageDimensions(file))) {
+    return { ok: false, message: BAD_DIMENSIONS_MESSAGE };
+  }
   return check;
 }
+
+/** Document Intelligence reads Images from 50 to 10,000 px on each side. */
+const MIN_IMAGE_SIDE = 50;
+const MAX_IMAGE_SIDE = 10_000;
+
+/** An Image whose size can't be read here goes through: Azure has the final say (category 4 `badDimensions`). */
+const withinImageLimits = (size: Dimensions | undefined) =>
+  !size ||
+  [size.width, size.height].every((side) => side >= MIN_IMAGE_SIDE && side <= MAX_IMAGE_SIDE);
 
 function checkTypeAndSize(file: File): SourceFileCheck {
   const extension = extensionOf(file.name);
