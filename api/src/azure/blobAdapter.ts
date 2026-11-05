@@ -29,6 +29,7 @@ function toAzureError(error: unknown): never {
       httpStatus: error.statusCode ?? 0,
       code: error.code,
       message: error.message.slice(0, 300),
+      requestId: error.response?.headers.get('x-ms-request-id') ?? undefined,
     });
   }
   throw error;
@@ -43,7 +44,11 @@ export function createBlobAdapter(options: {
   accountName: string;
   credential: TokenCredential;
 }): BlobPort {
-  const service = new BlobServiceClient(options.blobEndpoint, options.credential);
+  // The SDK retries 429/5xx itself (the shared retry wrapper skips blobs): 3 retries,
+  // exponential from 1 s, each try capped so a request stays inside SWA's 45 s.
+  const service = new BlobServiceClient(options.blobEndpoint, options.credential, {
+    retryOptions: { maxTries: 4, retryDelayInMs: 1000, maxRetryDelayInMs: 4000, tryTimeoutInMs: 8000 },
+  });
   let cachedKey: { key: UserDelegationKey; expiresOn: number } | undefined;
 
   async function delegationKey(sasExpiresOn: Date): Promise<UserDelegationKey> {

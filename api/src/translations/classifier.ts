@@ -95,6 +95,10 @@ export const RULES: readonly ClassifierRule[] = [
     category: 'serviceProblem',
   },
 
+  // --- Our own overall timeouts (the job is cancelled first) ---
+  { id: 'document.timeout', when: { service: ['documentTranslation'], scope: ['timeout'] }, category: 'serviceProblem' },
+  { id: 'image.timeout', when: { service: ['documentIntelligence'], scope: ['timeout'] }, category: 'serviceProblem' },
+
   // --- Translator batch Document Translation ---
   {
     id: 'batch.document.invalidRequest',

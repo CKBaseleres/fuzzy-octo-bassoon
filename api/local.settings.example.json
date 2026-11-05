@@ -6,7 +6,9 @@
     "STORAGE_ACCOUNT_NAME": "",
     "STORAGE_BLOB_ENDPOINT": "https://<account>.blob.core.windows.net/",
     "TRANSLATOR_ENDPOINT": "https://<translator>.cognitiveservices.azure.com/",
-    "DOCUMENT_INTELLIGENCE_ENDPOINT": "https://<di>.cognitiveservices.azure.com/"
+    "DOCUMENT_INTELLIGENCE_ENDPOINT": "https://<di>.cognitiveservices.azure.com/",
+    "DOCUMENT_TIMEOUT_MINUTES": "15",
+    "IMAGE_TIMEOUT_MINUTES": "3"
   },
   "Host": {
     "CORS": "http://localhost:5173"

@@ -1,6 +1,6 @@
 import { HttpRequest, HttpResponse, InvocationContext, type LogLevel } from '@azure/functions';
 import { withinRequestBudget, withRetries } from '../azure/retries';
-import type { Deps, HttpHandlerFactory } from '../deps';
+import { DEFAULT_TIMEOUTS, type Deps, type HttpHandlerFactory } from '../deps';
 import { createFakeAzureServices, type FakeAzureServices } from './fakeAzureServices';
 import { createFakeClock, type FakeClock } from './fakeClock';
 
@@ -43,11 +43,20 @@ export interface TestApi {
  * Arrange Azure through `api.azure` (its `state`), then assert on the response
  * and on `api.azure.state`.
  */
-export function createTestApi(options: { now?: string } = {}): TestApi {
+export function createTestApi(
+  options: { now?: string; documentTimeoutMinutes?: number; imageTimeoutMinutes?: number } = {},
+): TestApi {
   const clock = createFakeClock(options.now);
   const azure = createFakeAzureServices({ clock });
   // Production wraps the real adapter the same way in index.ts.
-  const deps: Deps = { azure: withRetries(azure, clock), clock };
+  const deps: Deps = {
+    azure: withRetries(azure, clock),
+    clock,
+    timeouts: {
+      documentMinutes: options.documentTimeoutMinutes ?? DEFAULT_TIMEOUTS.documentMinutes,
+      imageMinutes: options.imageTimeoutMinutes ?? DEFAULT_TIMEOUTS.imageMinutes,
+    },
+  };
   const logs: LogEntry[] = [];
 
   return {

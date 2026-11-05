@@ -1,7 +1,7 @@
 import { AzureServiceError, type BatchStatus } from '../azure/port';
 import type { HttpHandlerFactory } from '../deps';
 import { sourceBlobName } from '../translations/blobNames';
-import { classify, requestFailureInput } from '../translations/classifier';
+import { classify, requestFailureInput, type ClassifierInput } from '../translations/classifier';
 import { batchFailureInput, batchFailureMessage, failedResponse, isTerminal, mapBatchStatus } from '../translations/documentStatus';
 import { notFound } from '../translations/http';
 import { logEvent, logFailure } from '../translations/log';
@@ -11,11 +11,14 @@ import { decodeTranslationId } from '../translations/translationId';
  * GET /api/translations/{id}: polls Azure and maps the job to the SPA's status.
  * The first poll that sees the job end deletes the Source file blob.
  *
+ * A job still running `DOCUMENT_TIMEOUT_MINUTES` after the start is cancelled and
+ * reported as a Service problem. Azure errors (after retries) go through the classifier.
+ *
  * Plug-in points: 05 adds the `ref.kind === 'image'` branch; 07 reports Expired when
  * the blobs are gone.
  */
 export const createGetTranslationHandler: HttpHandlerFactory =
-  ({ azure, clock }) =>
+  ({ azure, clock, timeouts }) =>
   async (request, context) => {
     const ref = decodeTranslationId(request.params.id);
     if (!ref || ref.kind !== 'document') return notFound();
@@ -51,6 +54,15 @@ export const createGetTranslationHandler: HttpHandlerFactory =
         requestId: batch.requestId,
         message: batchFailureMessage(batch),
       });
+      return { status: 200, jsonBody: failedResponse(classification) };
+    }
+
+    if (!isTerminal(batch.status) && logBase.durationMs >= timeouts.documentMinutes * 60_000) {
+      // Best effort: the timer sweep is the backstop, and the SPA's DELETE cancels again.
+      await azure.documentTranslation.cancelBatch(ref.operationId).catch(() => undefined);
+      const input: ClassifierInput = { service: 'documentTranslation', scope: 'timeout', jobStatus: batch.status };
+      const classification = classify(input);
+      logFailure(context, logBase, input, classification);
       return { status: 200, jsonBody: failedResponse(classification) };
     }
 

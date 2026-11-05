@@ -3,8 +3,9 @@
 import { app } from '@azure/functions';
 import { DefaultAzureCredential } from '@azure/identity';
 import { createAzureServices } from './azure/azureServices';
+import { withinRequestBudget, withRetries } from './azure/retries';
 import { systemClock } from './clock';
-import type { Deps } from './deps';
+import { DEFAULT_TIMEOUTS, type Deps } from './deps';
 import { createUploadHandler } from './functions/createUpload';
 import { createDeleteTranslationHandler } from './functions/deleteTranslation';
 import { createGetLanguagesHandler } from './functions/getLanguages';
@@ -16,18 +17,39 @@ import { createStartTranslationHandler } from './functions/startTranslation';
 /** App settings are read lazily so a missing one fails the request, not host start-up (and /api/health keeps working). */
 const setting = (name: string) => process.env[name] ?? '';
 
+/** A positive whole number of minutes, or the spec's default. */
+const minutes = (name: string, fallback: number) => {
+  const value = Number(setting(name));
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+};
+
 const deps: Deps = {
-  azure: createAzureServices(
-    {
-      storageAccountName: setting('STORAGE_ACCOUNT_NAME'),
-      blobEndpoint: setting('STORAGE_BLOB_ENDPOINT'),
-      translatorEndpoint: setting('TRANSLATOR_ENDPOINT'),
-      documentIntelligenceEndpoint: setting('DOCUMENT_INTELLIGENCE_ENDPOINT'),
-    },
-    new DefaultAzureCredential(),
+  // Silent retries of Azure 429/5xx; see azure/retries.ts.
+  azure: withRetries(
+    createAzureServices(
+      {
+        storageAccountName: setting('STORAGE_ACCOUNT_NAME'),
+        blobEndpoint: setting('STORAGE_BLOB_ENDPOINT'),
+        translatorEndpoint: setting('TRANSLATOR_ENDPOINT'),
+        documentIntelligenceEndpoint: setting('DOCUMENT_INTELLIGENCE_ENDPOINT'),
+      },
+      new DefaultAzureCredential(),
+    ),
+    systemClock,
   ),
   clock: systemClock,
+  timeouts: {
+    documentMinutes: minutes('DOCUMENT_TIMEOUT_MINUTES', DEFAULT_TIMEOUTS.documentMinutes),
+    imageMinutes: minutes('IMAGE_TIMEOUT_MINUTES', DEFAULT_TIMEOUTS.imageMinutes),
+  },
 };
+
+// Every HTTP invocation gets its own 45-second retry budget (SWA's /api limit).
+app.hook.preInvocation((hook) => {
+  if (hook.invocationContext.options.trigger.type !== 'httpTrigger') return;
+  const handler = hook.functionHandler;
+  hook.functionHandler = (...args: unknown[]): unknown => withinRequestBudget(systemClock, (): unknown => handler(...args));
+});
 
 app.http('health', {
   route: 'health',

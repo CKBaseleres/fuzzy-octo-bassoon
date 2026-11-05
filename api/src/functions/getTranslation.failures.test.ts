@@ -284,3 +284,73 @@ describe('GET /api/translations/{id}: retrying Azure hiccups', () => {
     expect(attempts).toBe(2);
   });
 });
+
+describe('GET /api/translations/{id}: the Document timeout', () => {
+  const MINUTE = 60_000;
+
+  it('keeps translating just before 15 minutes', async () => {
+    const api = createTestApi();
+    const t = await startDocumentTranslation(api);
+    t.job.status = 'Running';
+    api.clock.advance(15 * MINUTE - 1);
+
+    const response = await poll(api, t.id);
+
+    expect(response.json<TranslationStatusResponse>()).toEqual({ status: 'translating' });
+  });
+
+  it.each(['NotStarted', 'Running'] as const)(
+    'cancels a job still %s after 15 minutes and reports Service problem',
+    async (status) => {
+      const api = createTestApi();
+      const t = await startDocumentTranslation(api);
+      t.job.status = status;
+      api.clock.advance(15 * MINUTE);
+
+      const response = await poll(api, t.id);
+
+      expect(response.json<TranslationStatusResponse>()).toEqual({ status: 'failed', category: 'serviceProblem' });
+      expect(t.job.status).toBe('Cancelled');
+      expect(failureLog(api)).toMatchObject({
+        level: 'warning',
+        fields: { ruleId: 'document.timeout', mapped: true, jobStatus: status, durationMs: 15 * MINUTE },
+      });
+    },
+  );
+
+  it('reports Service problem on timeout even when the cancel fails', async () => {
+    const api = createTestApi();
+    const t = await startDocumentTranslation(api);
+    t.job.status = 'Running';
+    api.azure
+      .script('documentTranslation', 'cancelBatch')
+      .rejects(new AzureServiceError({ service: 'documentTranslation', httpStatus: 500 }));
+    api.clock.advance(16 * MINUTE);
+
+    const response = await poll(api, t.id);
+
+    expect(response.json<TranslationStatusResponse>()).toEqual({ status: 'failed', category: 'serviceProblem' });
+  });
+
+  it('takes the timeout from the app setting', async () => {
+    const api = createTestApi({ documentTimeoutMinutes: 5 });
+    const t = await startDocumentTranslation(api);
+    t.job.status = 'Running';
+    api.clock.advance(5 * MINUTE);
+
+    const response = await poll(api, t.id);
+
+    expect(response.json<TranslationStatusResponse>()).toEqual({ status: 'failed', category: 'serviceProblem' });
+  });
+
+  it('still reports a job that ended in time as it ended', async () => {
+    const api = createTestApi();
+    const t = await startDocumentTranslation(api);
+    t.succeed();
+    api.clock.advance(20 * MINUTE);
+
+    const response = await poll(api, t.id);
+
+    expect(response.json<TranslationStatusResponse>()).toEqual({ status: 'ready', kind: 'document' });
+  });
+});
