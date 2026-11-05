@@ -2,6 +2,8 @@ import type {
   CreateUploadResponse,
   HealthResponse,
   LanguagesResponse,
+  QuotaLimit,
+  RefusedResponse,
   StartTranslationResponse,
   TranslatedFileResponse,
   TranslationStatusResponse,
@@ -54,6 +56,30 @@ export const mockApi = {
           expiresOn: '2030-01-01T00:00:00.000Z',
           ...body,
         }),
+      ),
+    );
+  },
+
+  /** `POST /api/translations/uploads` refused by a quota or the kill switch (429 + `Retry-After` in seconds). */
+  createUploadRefused(limit: QuotaLimit, retryAfterSeconds: number) {
+    server.use(
+      http.post<never, never, RefusedResponse>('/api/translations/uploads', () =>
+        HttpResponse.json(
+          { error: 'refused', limit },
+          { status: 429, headers: { 'retry-after': String(retryAfterSeconds) } },
+        ),
+      ),
+    );
+  },
+
+  /** `POST /api/translations` refused because the quota ran out after the upload SAS was issued. */
+  startTranslationRefused(limit: QuotaLimit, retryAfterSeconds: number) {
+    server.use(
+      http.post<never, never, RefusedResponse>('/api/translations', () =>
+        HttpResponse.json(
+          { error: 'refused', limit },
+          { status: 429, headers: { 'retry-after': String(retryAfterSeconds) } },
+        ),
       ),
     );
   },

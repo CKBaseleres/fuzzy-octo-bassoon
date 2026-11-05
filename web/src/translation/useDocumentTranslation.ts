@@ -9,6 +9,7 @@ import {
   startTranslation,
   uploadToBlob,
 } from '../api/client';
+import { readRefusal, type Refusal } from './refusal';
 import { saveFile } from './saveFile';
 import { translatedFileName } from './sourceFile';
 
@@ -27,7 +28,15 @@ export type TranslationState =
   | { phase: 'uploading'; request: TranslationRequest }
   | { phase: 'translating'; request: TranslationRequest; id: string }
   | { phase: 'ready'; request: TranslationRequest; id: string; saved?: { blob: Blob; fileName: string } }
-  | { phase: 'failed'; request: TranslationRequest; id?: string; category: FailureCategory; reason?: FailureReason };
+  | {
+      phase: 'failed';
+      request: TranslationRequest;
+      id?: string;
+      category: FailureCategory;
+      reason?: FailureReason;
+      /** Set with category `refused`: a quota or the kill switch said no (ticket 08). */
+      refusal?: Refusal;
+    };
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -90,8 +99,11 @@ export function useDocumentTranslation({ pollIntervalMs }: { pollIntervalMs: num
         setState({ phase: 'ready', request, id, saved: { blob, fileName } });
         // Only after a successful save: the Translated file now lives in memory only.
         await deleteTranslation(id);
-      } catch {
-        if (live()) setState({ phase: 'failed', request, id, category: 'serviceProblem' });
+      } catch (error) {
+        const refusal = await readRefusal(error);
+        if (!live()) return;
+        if (refusal) setState({ phase: 'failed', request, category: 'refused', refusal });
+        else setState({ phase: 'failed', request, id, category: 'serviceProblem' });
       }
     },
     [pollIntervalMs],

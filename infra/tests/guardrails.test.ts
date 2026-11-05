@@ -76,10 +76,14 @@ describe.skipIf(!bicepAvailable)('budget', () => {
 
 describe.skipIf(!bicepAvailable)('budget parameters', () => {
   it('dev: $25 a month', () => {
-    expect(compileParams('dev.bicepparam')).toMatchObject({ budgetAmount: 25, budgetAlertEmails: expect.any(Array) });
+    const params = compileParams('dev.bicepparam');
+    expect(params.budgetAmount).toBe(25);
+    expect(Array.isArray(params.budgetAlertEmails)).toBe(true);
   });
 
   it('prod: $100 a month', () => {
-    expect(compileParams('prod.bicepparam')).toMatchObject({ budgetAmount: 100, budgetAlertEmails: expect.any(Array) });
+    const params = compileParams('prod.bicepparam');
+    expect(params.budgetAmount).toBe(100);
+    expect(Array.isArray(params.budgetAlertEmails)).toBe(true);
   });
 });
