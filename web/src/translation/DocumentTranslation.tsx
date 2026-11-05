@@ -83,10 +83,14 @@ export function DocumentTranslation({ pollIntervalMs = 2000 }: { pollIntervalMs?
     if (state.phase === 'ready') resultHeading.current?.focus();
   }, [state.phase]);
 
+  const latestPick = useRef<File>(undefined);
   const onFile = (event: ChangeEvent<HTMLInputElement>) => {
     const picked = event.target.files?.[0];
+    latestPick.current = picked;
     setFile(picked);
-    setCheck(picked ? checkSourceFile(picked) : undefined);
+    setCheck(undefined);
+    // The checks read the file's bytes; a slower check for an earlier pick must not win.
+    if (picked) void checkSourceFile(picked).then((result) => latestPick.current === picked && setCheck(result));
   };
 
   const busy = state.phase === 'uploading' || state.phase === 'translating';

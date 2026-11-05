@@ -11,7 +11,7 @@ export default tseslint.config(
     languageOptions: {
       parserOptions: {
         projectService: {
-          allowDefaultProject: ['eslint.config.js', 'api/build.mjs'],
+          allowDefaultProject: ['eslint.config.js', 'api/build.mjs', 'web/scripts/make-fixtures.mjs'],
         },
         tsconfigRootDir: import.meta.dirname,
       },
