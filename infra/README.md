@@ -13,7 +13,7 @@ Bicep for Lingo Lens. Two environments, **dev** and **prod**, each a full and se
 
 - **Static Web App** (Standard), with preview environments off. The **Function App** is linked to it as its backend, so `/api/*` is served through the SWA proxy. Linking turns on the "Azure Static Web Apps (Linked)" identity provider on the Function App, so it rejects direct calls.
 - **Function App** on **Flex Consumption** (Node 22, system-assigned identity, at most 10 instances). FTP and SCM publishing credentials are off.
-- A **storage account** with shared-key access disabled. It holds the Functions host storage and the deployment package container (`app-package`).
+- A **storage account** with shared-key access disabled. It holds the Functions host storage, the deployment package container (`app-package`), the translation containers and the **quota Table** `quotacounters` (counts only: one row per UTC day, and one per client IP per UTC hour, keyed by a truncated SHA-256 of the IP).
 - **Translator** (S1, custom-domain endpoint, system-assigned identity, key auth off) and **Document Intelligence** (S0, custom-domain endpoint, key auth off).
 - **Application Insights** (workspace-based, local auth off) and its Log Analytics workspace.
 - **Role assignments**, all to managed identities:
@@ -27,7 +27,8 @@ Bicep for Lingo Lens. Two environments, **dev** and **prod**, each a full and se
   | Function App | Monitoring Metrics Publisher | Application Insights | Entra ID auth for telemetry |
   | Translator | Storage Blob Data Contributor | Storage | Batch Document Translation reads and writes containers without SAS |
 
-- **App settings** on the Function App: `STORAGE_ACCOUNT_NAME`, `STORAGE_BLOB_ENDPOINT`, `TRANSLATOR_ENDPOINT`, `DOCUMENT_INTELLIGENCE_ENDPOINT`, `TRANSLATIONS_ENABLED`, `DAILY_TRANSLATION_QUOTA`, `HOURLY_PER_IP_QUOTA`, `DOCUMENT_TIMEOUT_MINUTES` and `IMAGE_TIMEOUT_MINUTES`, plus the platform settings. An infra deploy **rewrites all app settings**, so set them only in Bicep.
+- A monthly cost **Budget** on the resource group (`budgetAmount`: dev 25, prod 100) that emails `budgetAlertEmails` at 50%, 80% and 100% of actual spend and 100% of forecast. It only alerts. While `budgetAlertEmails` is empty, no Budget is deployed. The subscription's offer must support Cost Management budgets (EA, MCA or pay-as-you-go).
+- **App settings** on the Function App: `STORAGE_ACCOUNT_NAME`, `STORAGE_BLOB_ENDPOINT`, `STORAGE_TABLE_ENDPOINT`, `QUOTA_TABLE_NAME`, `TRANSLATOR_ENDPOINT`, `DOCUMENT_INTELLIGENCE_ENDPOINT`, `TRANSLATIONS_ENABLED`, `DAILY_TRANSLATION_QUOTA`, `HOURLY_PER_IP_QUOTA`, `DOCUMENT_TIMEOUT_MINUTES` and `IMAGE_TIMEOUT_MINUTES`, plus the platform settings. An infra deploy **rewrites all app settings**, so set them only in Bicep.
 
 ## Validate locally
 
@@ -124,10 +125,14 @@ The deploy identity's RBAC Administrator role is conditioned on `assignableByDep
 1. **Emergency:** in the portal, open Function App → Settings → Environment variables, set `TRANSLATIONS_ENABLED` to `false`, and apply. The app restarts with translations off.
 2. **Straight after:** set `param translationsEnabled = false` in that environment's `.bicepparam` and merge. Otherwise the next `infra.yml` run switches translations back on.
 
+While it is off, both `POST /api/translations/uploads` and `POST /api/translations` answer 429 with `Retry-After` set to the next UTC midnight, and staff see "Lingo Lens has reached today's limit. Try again tomorrow." Translations already running carry on. To switch back on, do the same with `true`.
+
+The quotas (`dailyTranslationQuota`, `hourlyPerIpQuota`) work the same way: a portal change is a temporary override until the `.bicepparam` value is committed. A missing or invalid quota setting refuses every Translation (fail safe).
+
 ## Before the first prod deploy
 
 Fill in these values; later tickets add the parameters for them:
 
-- the Budget alert recipients (ticket 08)
+- the Budget alert recipients: `budgetAlertEmails` in `prod.bicepparam` (and `dev.bicepparam`); no Budget is deployed while it is empty
 - the required reviewer(s) for the `prod` GitHub Environment (step 5)
 - the prod custom domain `lingolens.<org-domain>`, which is a CNAME from the organisation's DNS team

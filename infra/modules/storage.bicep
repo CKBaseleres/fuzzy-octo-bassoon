@@ -7,7 +7,7 @@
 //     containers belongs here. CORS and soft delete / versioning / point-in-time
 //     restore live on blobServices 'default', which is declared in exactly ONE place:
 //     modules/blobService.bicep (deployed after the SWA, whose origin CORS needs).
-//   - ticket 08: the quota Table under a `tableServices` child.
+// The quota Table (ticket 08) is under `tableServices` below.
 
 param location string
 param name string
@@ -71,9 +71,23 @@ resource targetContainer 'Microsoft.Storage/storageAccounts/blobServices/contain
   }
 }
 
+// Quota counters (ticket 08): one entity per counter, holding only a count.
+// Keys are 'daily'/<UTC date> and 'hourly-<UTC hour>'/<truncated SHA-256 of the IP>.
+resource tableService 'Microsoft.Storage/storageAccounts/tableServices@2024-01-01' existing = {
+  parent: storage
+  name: 'default'
+}
+
+resource quotaTable 'Microsoft.Storage/storageAccounts/tableServices/tables@2024-01-01' = {
+  parent: tableService
+  name: 'quotacounters'
+}
+
 output id string = storage.id
 output name string = storage.name
 output blobEndpoint string = storage.properties.primaryEndpoints.blob
+output tableEndpoint string = storage.properties.primaryEndpoints.table
+output quotaTableName string = quotaTable.name
 output sourceContainerName string = sourceContainer.name
 output targetContainerName string = targetContainer.name
 output deploymentContainerUrl string = '${storage.properties.primaryEndpoints.blob}${deploymentContainer.name}'

@@ -6,7 +6,8 @@
 //   - 07: Blob lifecycle rule -> modules/storage.bicep (CORS and retention-off are in
 //         modules/blobService.bicep, deployed after the SWA; ticket 04)
 //   - 07: Application Insights "no content, no filenames" settings -> modules/monitoring.bicep
-//   - 08: quota Table (modules/storage.bicep), Budget + alerts (new module), kill switch (translationsEnabled)
+//   - 08 (done): quota Table (modules/storage.bicep), Budget + alerts (modules/budget.bicep),
+//         kill switch (translationsEnabled)
 //   - 09: saved Log Analytics query (modules/monitoring.bicep)
 
 targetScope = 'resourceGroup'
@@ -45,6 +46,13 @@ param imageTimeoutMinutes int = 3
 
 @description('Prod custom domain (host name only, e.g. lingolens.example.org). Empty: the SWA default host name only.')
 param customDomain string = ''
+
+@description('Monthly Budget amount for the resource group, in the billing currency. Dev 25, prod 100.')
+@minValue(1)
+param budgetAmount int
+
+@description('Budget alert recipients (a shared mailbox or distribution list). Empty: no Budget is deployed.')
+param budgetAlertEmails array
 
 @description('Extra tags merged onto every resource.')
 param extraTags object = {}
@@ -108,6 +116,8 @@ module functionApp 'modules/functionApp.bicep' = {
     appSettings: {
       STORAGE_ACCOUNT_NAME: storage.outputs.name
       STORAGE_BLOB_ENDPOINT: storage.outputs.blobEndpoint
+      STORAGE_TABLE_ENDPOINT: storage.outputs.tableEndpoint
+      QUOTA_TABLE_NAME: storage.outputs.quotaTableName
       TRANSLATOR_ENDPOINT: aiServices.outputs.translatorEndpoint
       DOCUMENT_INTELLIGENCE_ENDPOINT: aiServices.outputs.documentIntelligenceEndpoint
       TRANSLATIONS_ENABLED: translationsEnabled ? 'true' : 'false'
@@ -151,6 +161,17 @@ module blobService 'modules/blobService.bicep' = {
       ['https://${staticWebApp.outputs.defaultHostName}'],
       empty(customDomain) ? [] : ['https://${customDomain}']
     )
+  }
+}
+
+// Alerts at 50/80/100% of actual spend and 100% of forecast. It needs a recipient,
+// so it is skipped until budgetAlertEmails is filled in.
+module budget 'modules/budget.bicep' = if (!empty(budgetAlertEmails)) {
+  name: 'budget'
+  params: {
+    name: 'budget-lingolens-${environmentName}'
+    amount: budgetAmount
+    contactEmails: budgetAlertEmails
   }
 }
 
