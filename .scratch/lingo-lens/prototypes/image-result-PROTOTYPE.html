@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROTOTYPE · Image result screen</title>
+<!--
+  THROWAWAY PROTOTYPE: Lingo Lens ticket 07, "The Image Translation result screen".
+  Question: how should the Image result screen look and behave?
+  Plan: three structurally different variants on one page, switchable via ?variant=A|B|C
+        (bottom bar or ←/→), plus ?scenario=menu|notice|empty.
+  Assumptions:
+    - No React app exists yet, so this is plain JS with Fluent UI v9 colour tokens, not real Fluent components.
+    - The "Image" is an SVG built in-page and shown via an object URL, like the real SPA (no server fetch).
+    - Region data uses the Document Intelligence prebuilt-read shape (analyzeResult.pages[0].width/height,
+      paragraphs[].boundingRegions[0].polygon in pixels). Translations use the Translator v3 response shape,
+      matched to paragraphs by array index. Polygons are measured from the drawn text, so they line up for real.
+-->
+<style>
+  :root {
+    --brand: #0f6cbd; --brand-hover: #115ea3; --brand-soft: #ebf3fc;
+    --bg: #f5f5f5; --surface: #fff; --text: #242424; --muted: #616161;
+    --stroke: #e0e0e0; --success: #107c10; --success-soft: #f1faf1; --hl: #fff4ce;
+    --radius: 8px; --shadow: 0 2px 4px rgba(0,0,0,.14), 0 0 2px rgba(0,0,0,.12);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.45 "Segoe UI", -apple-system, system-ui, sans-serif; color: var(--text); background: var(--bg); padding-bottom: 90px; }
+  header.app { display: flex; align-items: center; gap: 12px; padding: 10px 24px; background: var(--surface); border-bottom: 1px solid var(--stroke); }
+  header.app .logo { font-weight: 600; font-size: 16px; }
+  header.app .logo span { color: var(--brand); }
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 24px; }
+  .bar .file { font-weight: 600; font-size: 16px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; background: var(--surface); border: 1px solid var(--stroke); font-size: 12px; color: var(--muted); }
+  .chip.ok { background: var(--success-soft); color: var(--success); border-color: #9fd89f; }
+  .chip.warn { background: var(--hl); color: #8a5a00; border-color: #f2d58a; }
+  .spacer { flex: 1; }
+  button { font: inherit; border-radius: 4px; border: 1px solid #d1d1d1; background: var(--surface); padding: 5px 12px; cursor: pointer; }
+  button:hover { background: #f5f5f5; }
+  button.primary { background: var(--brand); color: #fff; border-color: var(--brand); }
+  button.primary:hover { background: var(--brand-hover); }
+  button.sub { border: none; background: none; color: var(--brand); padding: 4px 6px; }
+  .card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); }
+  main { padding: 0 24px 24px; }
+
+  /* image + overlay, shared by all variants */
+  .stage { position: relative; line-height: 0; }
+  .stage img { width: 100%; height: auto; display: block; border-radius: 6px; }
+  .stage svg.overlay { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .overlay polygon { fill: transparent; stroke: transparent; stroke-width: 3; vector-effect: non-scaling-stroke; cursor: pointer; transition: fill .12s, stroke .12s; }
+  .overlay.outlined polygon { stroke: rgba(255,255,255,.55); stroke-dasharray: 4 3; }
+  .overlay polygon.on { fill: rgba(15,108,189,.28); stroke: #4cc2ff; stroke-dasharray: none; }
+  .overlay.dim-others.has-on polygon:not(.on) { fill: rgba(0,0,0,.25); }
+
+  /* ---------- A: split, cards ---------- */
+  .A { display: grid; grid-template-columns: minmax(0,1.1fr) minmax(0,1fr); gap: 20px; align-items: start; }
+  .A .imgcol { position: sticky; top: 12px; padding: 12px; }
+  .A .list { display: flex; flex-direction: column; gap: 8px; }
+  .A .list .head { display: flex; align-items: center; gap: 8px; padding: 0 4px 4px; color: var(--muted); }
+  .A .para { padding: 12px 14px; border-left: 4px solid transparent; cursor: default; }
+  .A .para.on { border-left-color: var(--brand); background: var(--brand-soft); }
+  .A .para .tr { font-size: 16px; }
+  .A .para .orig { margin-top: 4px; color: var(--muted); font-size: 13px; }
+  .A.hide-orig .orig { display: none; }
+
+  /* ---------- B: pins + table ---------- */
+  .B .imgwrap { padding: 12px; display: flex; justify-content: center; }
+  .B .stage { max-width: 900px; width: 100%; }
+  .B .pin { position: absolute; transform: translate(-60%, -60%); min-width: 22px; height: 22px; padding: 0 5px; border-radius: 11px; background: var(--brand); color: #fff; font: 600 12px/22px "Segoe UI", sans-serif; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,.4); cursor: pointer; border: 2px solid #fff; }
+  .B .pin.on { background: #fff; color: var(--brand); border-color: var(--brand); transform: translate(-60%, -60%) scale(1.25); }
+  .B table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  .B th, .B td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--stroke); vertical-align: top; }
+  .B th { font-weight: 600; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+  .B td.n { width: 44px; color: var(--brand); font-weight: 600; }
+  .B td.o { color: var(--muted); width: 45%; }
+  .B tr.on td { background: var(--brand-soft); }
+  .B tbody tr { cursor: default; }
+
+  /* ---------- C: focus inspector ---------- */
+  .C { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(320px,1fr); gap: 20px; align-items: start; }
+  .C .imgcol { padding: 12px; }
+  .C .hint { color: var(--muted); font-size: 12px; padding: 8px 2px 0; line-height: 1.4; }
+  .C .panel { padding: 16px; position: sticky; top: 12px; }
+  .C .nav { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .C .crop { width: 100%; max-height: 180px; background: #222; border-radius: 6px; display: block; }
+  .C .label { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 14px 0 4px; }
+  .C .orig { color: var(--muted); }
+  .C .tr { font-size: 20px; line-height: 1.35; }
+  .C details { margin-top: 18px; border-top: 1px solid var(--stroke); padding-top: 10px; }
+  .C details p { margin: 6px 0; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+  .C details p.on { background: var(--brand-soft); }
+
+  .empty { padding: 40px; text-align: center; color: var(--muted); }
+  .empty strong { display: block; color: var(--text); font-size: 16px; margin-bottom: 6px; }
+
+  /* prototype chrome (not part of the design) */
+  #switcher { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; align-items: center; gap: 4px; background: #111; color: #fff; padding: 6px 8px; border-radius: 999px; box-shadow: 0 6px 20px rgba(0,0,0,.35); font: 13px "Segoe UI", sans-serif; z-index: 99; }
+  #switcher button { background: transparent; color: #fff; border: none; padding: 4px 10px; border-radius: 999px; }
+  #switcher button:hover { background: #333; }
+  #switcher .lbl { min-width: 230px; text-align: center; }
+  #switcher select { background: #222; color: #fff; border: 1px solid #444; border-radius: 999px; padding: 3px 8px; font: inherit; }
+  #state { position: fixed; right: 12px; bottom: 70px; width: 340px; max-height: 40vh; overflow: auto; background: #111; color: #9fe2a0; font: 11px/1.4 ui-monospace, Menlo, monospace; padding: 10px; border-radius: 8px; white-space: pre-wrap; opacity: .92; z-index: 98; }
+  #state.hidden { display: none; }
+  .proto-tag { background: #111; color: #fff; font-size: 11px; padding: 2px 8px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<header class="app">
+  <div class="logo">Lingo <span>Lens</span></div>
+  <span class="proto-tag">PROTOTYPE: throwaway</span>
+</header>
+<div id="root"></div>
+<div id="state" class="hidden"></div>
+<div id="switcher">
+  <button id="prev" title="Previous variant (←)">◀</button>
+  <span class="lbl" id="vlabel"></span>
+  <button id="next" title="Next variant (→)">▶</button>
+  <select id="scenario" title="Sample Image"></select>
+  <button id="toggleState" title="Show the data the screen is rendering">state</button>
+</div>
+
+<script>
+// ---------------------------------------------------------------- fake Image + fake Azure responses
+const SCENARIOS = {
+  menu: {
+    file: 'Cafe_Sign.jpg', w: 1024, h: 768, from: 'fr', fromName: 'French', handwritten: true,
+    bg: '<rect width="1024" height="768" fill="#5a3b22"/><rect x="24" y="24" width="976" height="720" rx="10" fill="#26322a"/><circle cx="300" cy="180" r="420" fill="#334237" opacity=".55"/>',
+    font: '"Chalkboard SE","Segoe Print","Comic Sans MS",cursive', color: '#f4f1e8',
+    paras: [
+      { lines: [{ t: 'Plat du jour', x: 90, y: 120, s: 58 }], tr: "Today's special" },
+      { lines: [{ t: "Soupe à l'oignon gratinée — 6 €", x: 90, y: 225, s: 34 }], tr: 'French onion soup with melted cheese — €6' },
+      { lines: [{ t: 'Quiche lorraine, salade verte — 9 €', x: 90, y: 295, s: 34 }], tr: 'Quiche Lorraine, green salad — €9' },
+      { lines: [{ t: 'Tarte Tatin', x: 90, y: 380, s: 34 }, { t: 'et crème fraîche — 5 €', x: 90, y: 425, s: 34 }], tr: 'Tarte Tatin with crème fraîche — €5' },
+      { lines: [{ t: 'Café ou thé offert avec chaque menu', x: 90, y: 575, s: 27, r: -3 }], tr: 'Free coffee or tea with every set menu' },
+      { lines: [{ t: 'Merci !', x: 760, y: 690, s: 42, r: -9 }], tr: 'Thank you!' },
+    ],
+  },
+  notice: {
+    file: 'IMG_4471.HEIC', w: 600, h: 900, from: 'de', fromName: 'German', handwritten: false,
+    bg: '<rect width="600" height="900" fill="#bdb7aa"/><rect x="40" y="40" width="520" height="820" fill="#fdfcf7" transform="rotate(1.2 300 450)"/><rect x="40" y="40" width="520" height="14" fill="#c50f1f" transform="rotate(1.2 300 450)"/>',
+    font: 'Arial,Helvetica,sans-serif', color: '#1b1b1b',
+    paras: [
+      { lines: [{ t: 'HINWEIS', x: 80, y: 140, s: 54, r: 1.2 }], tr: 'NOTICE' },
+      { lines: [{ t: 'Wegen Bauarbeiten bleibt der', x: 80, y: 230, s: 27, r: 1.2 }, { t: 'Haupteingang vom 3. bis', x: 79, y: 268, s: 27, r: 1.2 }, { t: '14. März geschlossen.', x: 78, y: 306, s: 27, r: 1.2 }], tr: 'Due to construction work, the main entrance will be closed from 3 to 14 March.' },
+      { lines: [{ t: 'Bitte benutzen Sie den', x: 76, y: 386, s: 27, r: 1.2 }, { t: 'Seiteneingang in der', x: 75, y: 424, s: 27, r: 1.2 }, { t: 'Gartenstraße.', x: 74, y: 462, s: 27, r: 1.2 }], tr: 'Please use the side entrance on Gartenstraße.' },
+      { lines: [{ t: 'Aufzug: nur für Rollstühle', x: 72, y: 552, s: 25, r: 1.2 }, { t: 'und Kinderwagen.', x: 71, y: 586, s: 25, r: 1.2 }], tr: 'Lift: wheelchairs and pushchairs only.' },
+      { lines: [{ t: 'Danke für Ihr Verständnis.', x: 69, y: 680, s: 27, r: 1.2 }], tr: 'Thank you for your understanding.' },
+      { lines: [{ t: 'Die Hausverwaltung', x: 300, y: 790, s: 22, r: 1.2 }], tr: 'Building management' },
+    ],
+  },
+  empty: {
+    file: 'Sunset.png', w: 900, h: 600, from: null, fromName: null, handwritten: false,
+    bg: '<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fbb040"/><stop offset=".6" stop-color="#f15a29"/><stop offset="1" stop-color="#3b1f4a"/></linearGradient></defs><rect width="900" height="600" fill="url(#g)"/><circle cx="450" cy="400" r="90" fill="#ffe08a"/><rect y="420" width="900" height="180" fill="#2a1638"/>',
+    font: 'Arial', color: '#000', paras: [],
+  },
+};
+
+const measure = (() => { const c = document.createElement('canvas').getContext('2d'); return (t, s, f) => { c.font = `${s}px ${f}`; return c.measureText(t).width; }; })();
+const rot = (px, py, cx, cy, deg) => { const a = deg * Math.PI / 180, dx = px - cx, dy = py - cy; return [cx + dx * Math.cos(a) - dy * Math.sin(a), cy + dx * Math.sin(a) + dy * Math.cos(a)]; };
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+// Build: the Image (as an object URL), the Document Intelligence analyzeResult, and the Translator response.
+function build(sc) {
+  const svgText = sc.paras.flatMap(p => p.lines).map(l =>
+    `<text x="${l.x}" y="${l.y}" font-size="${l.s}" font-family='${sc.font}' fill="${sc.color}" ${l.r ? `transform="rotate(${l.r} ${l.x} ${l.y})"` : ''}>${esc(l.t)}</text>`).join('');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${sc.w}" height="${sc.h}" viewBox="0 0 ${sc.w} ${sc.h}">${sc.bg}${svgText}</svg>`;
+  const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+
+  let offset = 0, content = [];
+  const linePoly = l => {
+    const w = measure(l.t, l.s, sc.font), pad = 6;
+    const box = [[l.x - pad, l.y - l.s * .85], [l.x + w + pad, l.y - l.s * .85], [l.x + w + pad, l.y + l.s * .28], [l.x - pad, l.y + l.s * .28]];
+    return box.map(([px, py]) => l.r ? rot(px, py, l.x, l.y, l.r) : [px, py]);
+  };
+  const lines = [], paragraphs = sc.paras.map(p => {
+    const pts = p.lines.map(l => { const poly = linePoly(l); lines.push({ content: l.t, polygon: poly.flat().map(Math.round), spans: [{ offset, length: l.t.length }] }); offset += l.t.length + 1; content.push(l.t); return poly; });
+    // paragraph polygon = first line's top edge + last line's bottom edge, widened to the widest line
+    const first = pts[0], last = pts[pts.length - 1];
+    const maxRight = Math.max(...pts.map(q => q[1][0]));
+    const poly = [first[0], [maxRight, first[1][1]], [maxRight, last[2][1]], last[3]];
+    const text = p.lines.map(l => l.t).join('\n');
+    return { content: text, boundingRegions: [{ pageNumber: 1, polygon: poly.flat().map(Math.round) }], spans: [{ offset: offset - text.length - 1, length: text.length }] };
+  });
+  const analyzeResult = {
+    apiVersion: '2024-11-30', modelId: 'prebuilt-read', content: content.join('\n'),
+    pages: [{ pageNumber: 1, angle: 0, width: sc.w, height: sc.h, unit: 'pixel', lines }],
+    paragraphs,
+    styles: sc.handwritten ? [{ isHandwritten: true, confidence: 0.93, spans: [{ offset: 0, length: offset }] }] : [],
+  };
+  // Translator v3: request body was paragraphs.map(p => ({ Text: p.content })), so the response is index-aligned.
+  const translations = sc.paras.map(p => ({ detectedLanguage: { language: sc.from, score: 0.98 }, translations: [{ text: p.tr, to: 'en' }] }));
+  return { file: sc.file, url, analyzeResult, translations, fromName: sc.fromName };
+}
+
+// ---------------------------------------------------------------- shared view-model + hover state
+const params = new URLSearchParams(location.search);
+const VARIANTS = { A: 'Split: Image | text cards', B: 'Numbered pins + table', C: 'Focus inspector' };
+let variant = VARIANTS[params.get('variant')] ? params.get('variant') : 'A';
+let scenarioKey = SCENARIOS[params.get('scenario')] ? params.get('scenario') : 'menu';
+let data, active = null, selected = 0, showOrig = true;
+
+const items = () => data.analyzeResult.paragraphs.map((p, i) => ({ i, orig: p.content.replace(/\n/g, ' '), tr: data.translations[i].translations[0].text, poly: p.boundingRegions[0].polygon }));
+const page = () => data.analyzeResult.pages[0];
+const pts = poly => poly.reduce((a, v, k) => a + (k % 2 ? ',' : (k ? ' ' : '')) + v, '');
+
+function stageHTML(outlined) {
+  const p = page();
+  // viewBox in Azure pixel units + preserveAspectRatio none = no manual scaling of polygons
+  return `<div class="stage"><img src="${data.url}" alt="Original Image: ${esc(data.file)}">
+    <svg class="overlay ${outlined ? 'outlined' : ''} dim-others" viewBox="0 0 ${p.width} ${p.height}" preserveAspectRatio="none">
+      ${items().map(it => `<polygon data-i="${it.i}" points="${pts(it.poly)}"><title>${esc(it.tr)}</title></polygon>`).join('')}
+    </svg>__PINS__</div>`;
+}
+
+function headerBar() {
+  const n = items().length, hw = data.analyzeResult.styles.some(s => s.isHandwritten);
+  return `<div class="bar">
+    <span class="file">${esc(data.file)}</span>
+    ${data.fromName ? `<span class="chip">${data.fromName} (detected) → English</span>` : '<span class="chip">English</span>'}
+    <span class="chip ok">● Ready</span>
+    ${n ? `<span class="chip">${n} text blocks</span>` : ''}
+    ${hw ? '<span class="chip warn">Handwriting detected: check the translation</span>' : ''}
+    <span class="spacer"></span>
+    ${n ? '<button id="copyAll">Copy translated text</button>' : ''}
+    <button class="primary">New Translation</button>
+  </div>`;
+}
+
+const emptyHTML = () => `<div class="card empty"><strong>No text found in this Image</strong>Lingo Lens could not read any text. If the Image does contain text, try a sharper or straighter photo.</div>`;
+
+// ---------------------------------------------------------------- variants
+function VariantA() {
+  if (!items().length) return `<div class="A"><div class="card imgcol">${stageHTML(false).replace('__PINS__', '')}</div>${emptyHTML()}</div>`;
+  return `<div class="A ${showOrig ? '' : 'hide-orig'}">
+    <div class="card imgcol">${stageHTML(false).replace('__PINS__', '')}</div>
+    <div class="list">
+      <div class="head">Translated text <span class="spacer"></span><label><input type="checkbox" id="origToggle" ${showOrig ? 'checked' : ''}> Show original</label></div>
+      ${items().map(it => `<div class="card para" data-i="${it.i}" tabindex="0"><div class="tr">${esc(it.tr)}</div><div class="orig">${esc(it.orig)}</div></div>`).join('')}
+    </div></div>`;
+}
+
+function VariantB() {
+  const p = page();
+  const pins = items().map(it => `<div class="pin" data-i="${it.i}" style="left:${it.poly[0] / p.width * 100}%;top:${it.poly[1] / p.height * 100}%">${it.i + 1}</div>`).join('');
+  return `<div class="B">
+    <div class="card imgwrap">${stageHTML(true).replace('__PINS__', pins)}</div>
+    ${items().length ? `<div class="card"><table><thead><tr><th>#</th><th>Original (${data.fromName})</th><th>English</th></tr></thead><tbody>
+      ${items().map(it => `<tr data-i="${it.i}" tabindex="0"><td class="n">${it.i + 1}</td><td class="o">${esc(it.orig)}</td><td>${esc(it.tr)}</td></tr>`).join('')}
+    </tbody></table></div>` : `<div style="margin-top:16px">${emptyHTML()}</div>`}
+  </div>`;
+}
+
+function VariantC() {
+  const its = items();
+  if (!its.length) return `<div class="C"><div class="card imgcol">${stageHTML(true).replace('__PINS__', '')}</div>${emptyHTML()}</div>`;
+  const it = its[selected], p = page();
+  const xs = it.poly.filter((_, k) => k % 2 === 0), ys = it.poly.filter((_, k) => k % 2);
+  const pad = 16, bx = Math.max(0, Math.min(...xs) - pad), by = Math.max(0, Math.min(...ys) - pad);
+  const bw = Math.min(p.width, Math.max(...xs) + pad) - bx, bh = Math.min(p.height, Math.max(...ys) + pad) - by;
+  return `<div class="C">
+    <div class="card imgcol">${stageHTML(true).replace('__PINS__', '')}
+      <div class="hint">Click a text block on the Image, or use ↑ / ↓ to step through.</div></div>
+    <div class="card panel">
+      <div class="nav"><button id="cPrev">↑ Prev</button><span>Block ${selected + 1} of ${its.length}</span><button id="cNext">Next ↓</button></div>
+      <svg class="crop" viewBox="${bx} ${by} ${bw} ${bh}" preserveAspectRatio="xMidYMid meet"><image href="${data.url}" width="${p.width}" height="${p.height}"/></svg>
+      <div class="label">Original (${data.fromName})</div><div class="orig">${esc(it.orig)}</div>
+      <div class="label">English</div><div class="tr">${esc(it.tr)}</div>
+      <details><summary>All translated text</summary>${its.map(x => `<p data-i="${x.i}" class="${x.i === selected ? 'on' : ''}">${esc(x.tr)}</p>`).join('')}</details>
+    </div></div>`;
+}
+
+// ---------------------------------------------------------------- render + interaction
+function setActive(i) {
+  active = i;
+  document.querySelectorAll('[data-i]').forEach(el => el.classList.toggle('on', i !== null && +el.dataset.i === i));
+  document.querySelectorAll('svg.overlay').forEach(s => s.classList.toggle('has-on', i !== null));
+  renderState();
+}
+
+function render() {
+  const html = { A: VariantA, B: VariantB, C: VariantC }[variant]();
+  document.getElementById('root').innerHTML = headerBar() + `<main>${html}</main>`;
+  document.getElementById('vlabel').textContent = `${variant} (${VARIANTS[variant]})`;
+  const root = document.getElementById('root');
+
+  if (variant === 'C') {
+    root.querySelectorAll('[data-i]').forEach(el => el.addEventListener('click', () => { selected = +el.dataset.i; render(); }));
+    document.getElementById('cPrev')?.addEventListener('click', () => step(-1));
+    document.getElementById('cNext')?.addEventListener('click', () => step(1));
+    setActive(items().length ? selected : null);
+  } else {
+    root.querySelectorAll('[data-i]').forEach(el => {
+      el.addEventListener('mouseenter', () => setActive(+el.dataset.i));
+      el.addEventListener('mouseleave', () => setActive(null));
+      el.addEventListener('focus', () => setActive(+el.dataset.i));
+      el.addEventListener('blur', () => setActive(null));
+      if (el.tagName === 'polygon' || el.classList.contains('pin')) el.addEventListener('mouseenter', () => {
+        root.querySelector(`.para[data-i="${el.dataset.i}"], tr[data-i="${el.dataset.i}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      });
+    });
+    setActive(null);
+  }
+  document.getElementById('origToggle')?.addEventListener('change', e => { showOrig = e.target.checked; render(); });
+  document.getElementById('copyAll')?.addEventListener('click', e => {
+    navigator.clipboard?.writeText(items().map(i => i.tr).join('\n\n')); e.target.textContent = 'Copied ✓';
+  });
+}
+
+function step(d) { const n = items().length; if (!n) return; selected = (selected + d + n) % n; render(); }
+
+function renderState() {
+  const its = data.analyzeResult.paragraphs.length ? items() : [];
+  const i = variant === 'C' ? selected : active;
+  document.getElementById('state').textContent = JSON.stringify({
+    variant, scenario: scenarioKey, activeIndex: i,
+    page: (({ width, height, unit }) => ({ width, height, unit }))(page()),
+    paragraphCount: its.length,
+    'analyzeResult.paragraphs[i]': i !== null && its.length ? data.analyzeResult.paragraphs[i] : null,
+    'translatorResponse[i]': i !== null && its.length ? data.translations[i] : null,
+  }, null, 2);
+}
+
+function syncURL() { const u = new URL(location); u.searchParams.set('variant', variant); u.searchParams.set('scenario', scenarioKey); history.replaceState(null, '', u); }
+function cycle(d) { const ks = Object.keys(VARIANTS); variant = ks[(ks.indexOf(variant) + d + ks.length) % ks.length]; syncURL(); render(); }
+function loadScenario(k) { if (data) URL.revokeObjectURL(data.url); scenarioKey = k; data = build(SCENARIOS[k]); selected = 0; syncURL(); render(); }
+
+document.getElementById('prev').onclick = () => cycle(-1);
+document.getElementById('next').onclick = () => cycle(1);
+document.getElementById('toggleState').onclick = () => document.getElementById('state').classList.toggle('hidden');
+const sel = document.getElementById('scenario');
+sel.innerHTML = Object.entries({ menu: 'Chalkboard menu (FR, landscape)', notice: 'Door notice (DE, portrait, tilted)', empty: 'No text found' }).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
+sel.value = scenarioKey; sel.onchange = () => loadScenario(sel.value);
+document.addEventListener('keydown', e => {
+  if (e.target.closest('input, textarea, select, [contenteditable]')) return;
+  if (e.key === 'ArrowLeft') cycle(-1);
+  if (e.key === 'ArrowRight') cycle(1);
+  if (variant === 'C' && e.key === 'ArrowUp') { e.preventDefault(); step(-1); }
+  if (variant === 'C' && e.key === 'ArrowDown') { e.preventDefault(); step(1); }
+});
+loadScenario(scenarioKey);
+</script>
+</body>
+</html>
