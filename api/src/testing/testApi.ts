@@ -1,6 +1,8 @@
 import { HttpRequest, HttpResponse, InvocationContext, type LogLevel } from '@azure/functions';
 import { withinRequestBudget, withRetries } from '../azure/retries';
-import { DEFAULT_TIMEOUTS, type Deps, type HttpHandlerFactory } from '../deps';
+import { DEFAULT_TIMEOUTS, type Deps, type HttpHandlerFactory, type TimerHandlerFactory } from '../deps';
+import { withApiHeaders } from '../guardrails/apiHeaders';
+import type { Limits } from '../guardrails/limits';
 import { createFakeAzureServices, type FakeAzureServices } from './fakeAzureServices';
 import { createFakeClock, type FakeClock } from './fakeClock';
 
@@ -36,6 +38,8 @@ export interface TestApi {
   deps: Deps;
   /** Builds the handler from its factory with this API's deps and invokes it like the Functions host would. */
   call(factory: HttpHandlerFactory, request: TestRequest): Promise<TestResponse>;
+  /** Builds a timer Function from its factory and fires it once, like the host would on schedule. */
+  runTimer(factory: TimerHandlerFactory): Promise<void>;
 }
 
 /**
@@ -43,8 +47,11 @@ export interface TestApi {
  * Arrange Azure through `api.azure` (its `state`), then assert on the response
  * and on `api.azure.state`.
  */
+/** Generous enough that tests about other things never hit a quota. */
+export const TEST_LIMITS: Limits = { translationsEnabled: true, dailyQuota: 1000, hourlyPerIpQuota: 1000 };
+
 export function createTestApi(
-  options: { now?: string; documentTimeoutMinutes?: number; imageTimeoutMinutes?: number } = {},
+  options: { now?: string; limits?: Partial<Limits>; documentTimeoutMinutes?: number; imageTimeoutMinutes?: number } = {},
 ): TestApi {
   const clock = createFakeClock(options.now);
   const azure = createFakeAzureServices({ clock });
@@ -52,12 +59,18 @@ export function createTestApi(
   const deps: Deps = {
     azure: withRetries(azure, clock),
     clock,
+    limits: { ...TEST_LIMITS, ...options.limits },
     timeouts: {
       documentMinutes: options.documentTimeoutMinutes ?? DEFAULT_TIMEOUTS.documentMinutes,
       imageMinutes: options.imageTimeoutMinutes ?? DEFAULT_TIMEOUTS.imageMinutes,
     },
   };
   const logs: LogEntry[] = [];
+  const context = () =>
+    new InvocationContext({
+      functionName: 'test',
+      logHandler: (level, ...args) => logs.push({ level, args }),
+    });
 
   return {
     azure,
@@ -73,12 +86,11 @@ export function createTestApi(
         params: request.params,
         body: request.body === undefined ? undefined : { string: JSON.stringify(request.body) },
       });
-      const context = new InvocationContext({
-        functionName: 'test',
-        logHandler: (level, ...args) => logs.push({ level, args }),
-      });
-      const result = await withinRequestBudget(clock, () => handler(httpRequest, context));
-      const response = result instanceof HttpResponse ? result : new HttpResponse(result);
+      // Mirrors the host: index.ts gives each request a retry budget (preInvocation)
+      // and adds these headers to every HTTP result (postInvocation).
+      const result = await withinRequestBudget(clock, () => handler(httpRequest, context()));
+      const withHeaders = withApiHeaders(result ?? {});
+      const response = withHeaders instanceof HttpResponse ? withHeaders : new HttpResponse(withHeaders);
       const text = await response.text();
       return {
         status: response.status,
@@ -87,6 +99,13 @@ export function createTestApi(
           return JSON.parse(text) as T;
         },
       };
+    },
+    async runTimer(factory) {
+      const now = clock.now().toISOString();
+      await factory(deps)(
+        { isPastDue: false, schedule: { adjustForDST: false }, scheduleStatus: { last: now, next: now, lastUpdated: now } },
+        context(),
+      );
     },
   };
 }

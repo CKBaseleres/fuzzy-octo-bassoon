@@ -1,16 +1,25 @@
-import { DOCUMENT_EXTENSIONS, MAX_DOCUMENT_BYTES, isDocumentExtension, type DocumentExtension } from '@lingo-lens/shared';
+import {
+  DOCUMENT_EXTENSIONS,
+  IMAGE_EXTENSIONS,
+  MAX_DOCUMENT_BYTES,
+  MAX_IMAGE_BYTES,
+  isDocumentExtension,
+  isImageExtension,
+  type DocumentExtension,
+  type ImageExtension,
+} from '@lingo-lens/shared';
 
 /**
- * Browser checks (category 1: Rejected before upload). Ticket 05 adds Images
- * (IMAGE_EXTENSIONS, MAX_IMAGE_BYTES); ticket 11 adds the encryption and
- * dimension sniffing (async, reading the file's bytes).
+ * Browser checks (category 1: Rejected before upload). Ticket 11 adds the
+ * encryption and Image dimension sniffing (async, reading the file's bytes).
  */
 export type SourceFileCheck =
   | { ok: true; kind: 'document'; extension: DocumentExtension }
+  | { ok: true; kind: 'image'; extension: ImageExtension }
   | { ok: false; message: string };
 
 /** Value for the file input's `accept` attribute. */
-export const ACCEPT = DOCUMENT_EXTENSIONS.map((ext) => `.${ext}`).join(',');
+export const ACCEPT = [...DOCUMENT_EXTENSIONS, ...IMAGE_EXTENSIONS].map((ext) => `.${ext}`).join(',');
 
 export const extensionOf = (name: string) => {
   const dot = name.lastIndexOf('.');
@@ -24,10 +33,18 @@ export const baseNameOf = (name: string) => {
 
 export function checkSourceFile(file: File): SourceFileCheck {
   const extension = extensionOf(file.name);
+  if (isImageExtension(extension)) {
+    if (file.size === 0) return { ok: false, message: 'This file is empty. Choose another file.' };
+    if (file.size > MAX_IMAGE_BYTES) {
+      return { ok: false, message: 'This Image is larger than 20 MB. Choose a smaller file.' };
+    }
+    return { ok: true, kind: 'image', extension };
+  }
   if (!isDocumentExtension(extension)) {
     return {
       ok: false,
-      message: 'This file type isn’t supported. Choose a PDF, Office, OpenDocument, text, web page or email file.',
+      message:
+        'This file type isn’t supported. Choose a PDF, Office, OpenDocument, text, web page or email file, or a JPEG, PNG, BMP, TIFF or HEIF Image.',
     };
   }
   if (file.size === 0) return { ok: false, message: 'This file is empty. Choose another file.' };

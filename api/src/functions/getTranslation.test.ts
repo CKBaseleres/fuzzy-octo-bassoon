@@ -2,7 +2,9 @@ import type { TranslationStatusResponse } from '@lingo-lens/shared';
 import { describe, expect, it } from 'vitest';
 import { startDocumentTranslation } from '../testing/documentTranslation';
 import { createTestApi, type TestApi } from '../testing/testApi';
+import { AzureServiceError } from '../azure/port';
 import { createGetTranslationHandler } from './getTranslation';
+import { createSweepHandler } from './sweep';
 
 const poll = (api: TestApi, id: string) =>
   api.call(createGetTranslationHandler, { method: 'GET', path: `/api/translations/${id}`, params: { id } });
@@ -84,5 +86,61 @@ describe('GET /api/translations/{id}', () => {
       ],
     });
     expect(JSON.stringify(api.logs)).not.toMatch(/https?:|sig=/);
+  });
+
+  describe('Expired', () => {
+    const expired: TranslationStatusResponse = { status: 'failed', category: 'expired' };
+
+    it('reports expired when the sweep cancelled a job still running after the hour', async () => {
+      const api = createTestApi();
+      const t = await startDocumentTranslation(api);
+      t.job.status = 'Running';
+      api.clock.advance(61 * 60_000);
+      await api.runTimer(createSweepHandler);
+
+      const response = await poll(api, t.id);
+
+      expect(response.status).toBe(200);
+      expect(response.json<TranslationStatusResponse>()).toEqual(expired);
+    });
+
+    it('reports expired when the job succeeded but the sweep deleted the Translated file before download', async () => {
+      const api = createTestApi();
+      const t = await startDocumentTranslation(api);
+      t.succeed();
+      await poll(api, t.id);
+      api.clock.advance(61 * 60_000);
+      await api.runTimer(createSweepHandler);
+
+      expect((await poll(api, t.id)).json<TranslationStatusResponse>()).toEqual(expired);
+    });
+
+    it('reports expired when the sweep deleted the blobs before it could cancel the job', async () => {
+      const api = createTestApi();
+      const t = await startDocumentTranslation(api);
+      t.job.status = 'Running';
+      api.azure.state.blobs.delete(t.sourceBlobName);
+
+      expect((await poll(api, t.id)).json<TranslationStatusResponse>()).toEqual(expired);
+    });
+
+    it('reports expired when Translator no longer knows the job', async () => {
+      const api = createTestApi();
+      const t = await startDocumentTranslation(api);
+      api.azure
+        .script('documentTranslation', 'getBatchStatus')
+        .rejects(new AzureServiceError({ service: 'documentTranslation', httpStatus: 404, code: 'ResourceNotFound' }));
+
+      expect((await poll(api, t.id)).json<TranslationStatusResponse>()).toEqual(expired);
+    });
+
+    it.each(['Failed', 'ValidationFailed'] as const)('keeps reporting a %s job as failed, not expired', async (status) => {
+      const api = createTestApi();
+      const t = await startDocumentTranslation(api);
+      t.job.status = status;
+      await poll(api, t.id);
+
+      expect((await poll(api, t.id)).json<TranslationStatusResponse>()).not.toEqual(expired);
+    });
   });
 });

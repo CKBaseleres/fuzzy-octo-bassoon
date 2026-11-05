@@ -3,11 +3,11 @@
 // Shared-key access is disabled: everything authenticates with Microsoft Entra ID.
 //
 // Extension points for later tickets:
-//   - ticket 07: the 1-day lifecycle rule (managementPolicies) for the source/target
-//     containers belongs here. CORS and soft delete / versioning / point-in-time
+//   - ticket 07 (done): the 1-day lifecycle rule (managementPolicies) for the
+//     source/target containers, below. CORS and soft delete / versioning / point-in-time
 //     restore live on blobServices 'default', which is declared in exactly ONE place:
 //     modules/blobService.bicep (deployed after the SWA, whose origin CORS needs).
-//   - ticket 08: the quota Table under a `tableServices` child.
+// The quota Table (ticket 08) is under `tableServices` below.
 
 param location string
 param name string
@@ -71,9 +71,55 @@ resource targetContainer 'Microsoft.Storage/storageAccounts/blobServices/contain
   }
 }
 
+// Backstop to the 5-minute sweep Function (which deletes blobs after 60 minutes): if the
+// timer ever stops, nothing in `source` or `target` outlives about a day. Lifecycle
+// rules work in days and run at most once a day, so they cannot meet the hour on their own.
+resource lifecyclePolicy 'Microsoft.Storage/storageAccounts/managementPolicies@2024-01-01' = {
+  parent: storage
+  name: 'default'
+  properties: {
+    policy: {
+      rules: [
+        {
+          name: 'delete-translation-blobs-after-1-day'
+          enabled: true
+          type: 'Lifecycle'
+          definition: {
+            filters: {
+              blobTypes: ['blockBlob']
+              prefixMatch: ['${sourceContainer.name}/', '${targetContainer.name}/']
+            }
+            actions: {
+              baseBlob: {
+                delete: {
+                  daysAfterCreationGreaterThan: 1
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+
+// Quota counters (ticket 08): one entity per counter, holding only a count.
+// Keys are 'daily'/<UTC date> and 'hourly-<UTC hour>'/<truncated SHA-256 of the IP>.
+resource tableService 'Microsoft.Storage/storageAccounts/tableServices@2024-01-01' existing = {
+  parent: storage
+  name: 'default'
+}
+
+resource quotaTable 'Microsoft.Storage/storageAccounts/tableServices/tables@2024-01-01' = {
+  parent: tableService
+  name: 'quotacounters'
+}
+
 output id string = storage.id
 output name string = storage.name
 output blobEndpoint string = storage.properties.primaryEndpoints.blob
+output tableEndpoint string = storage.properties.primaryEndpoints.table
+output quotaTableName string = quotaTable.name
 output sourceContainerName string = sourceContainer.name
 output targetContainerName string = targetContainer.name
 output deploymentContainerUrl string = '${storage.properties.primaryEndpoints.blob}${deploymentContainer.name}'

@@ -1,4 +1,9 @@
-import { isDocumentExtension, translatedExtension, type StartTranslationResponse } from '@lingo-lens/shared';
+import {
+  isDocumentExtension,
+  isImageExtension,
+  translatedExtension,
+  type StartTranslationResponse,
+} from '@lingo-lens/shared';
 import type { HttpResponseInit } from '@azure/functions';
 import { AzureServiceError } from '../azure/port';
 import type { HttpHandlerFactory } from '../deps';
@@ -6,30 +11,40 @@ import { classify, requestFailureInput } from '../translations/classifier';
 import { failedResponse } from '../translations/documentStatus';
 import { sourceBlobName, targetBlobName } from '../translations/blobNames';
 import { GUID_PATTERN, badRequest, normaliseExtension, readJsonObject } from '../translations/http';
+import { admitTranslation } from '../guardrails/admitTranslation';
 import { logEvent, logFailure, type TranslationLogFields } from '../translations/log';
 import { encodeTranslationId } from '../translations/translationId';
 
 /** Translator language codes: `fr`, `zh-Hans`, `sr-Latn-ME`... */
 const LANGUAGE_CODE = /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8}){0,2}$/;
 
+/** Lifetime of the read-only SAS Document Intelligence fetches the Image through. */
+export const READ_SAS_MINUTES = 5;
+
 /**
  * POST /api/translations: starts the Translation of an uploaded Source file.
  *
- * Plug-in points for later tickets, in this order before `startBatch`:
- *   - 08: kill switch, quota counting, and the real-size check (delete if oversized)
- *   - 05: `isImageExtension(extension)` branch that starts `prebuilt-read` instead
- *   - 09 (done): submit errors (`AzureServiceError`) -> classified failure, 502
+ * `admitTranslation` (ticket 08) applies the size check, kill switch and quotas
+ * to Documents and Images alike, and counts the Translation. Images then start
+ * `prebuilt-read` (ticket 05); Documents start a batch job.
+ *
+ * Plug-in points for later tickets:
+ *   - 09 (done): batch submit errors (`AzureServiceError`) -> classified failure, 502.
+ *     10: do the same for `startRead` (`submitFailed(error, 'startRead', ...)`).
  */
 export const createStartTranslationHandler: HttpHandlerFactory =
-  ({ azure, clock }) =>
+  (deps) =>
   async (request, context) => {
+    const { azure, clock } = deps;
+
     /** Azure refused the submit (after retries): classify, log, delete the Source file, answer 502. */
     const submitFailed = async (
       error: AzureServiceError,
+      operation: string,
       source: string,
       logBase: TranslationLogFields,
     ): Promise<HttpResponseInit> => {
-      const input = requestFailureInput(error, 'startBatch');
+      const input = requestFailureInput(error, operation);
       const classification = classify(input);
       logFailure(context, logBase, input, classification, error);
       await azure.blobs.deleteBlob(source).catch(() => undefined);
@@ -44,13 +59,36 @@ export const createStartTranslationHandler: HttpHandlerFactory =
     if (typeof targetLanguage !== 'string' || !LANGUAGE_CODE.test(targetLanguage)) {
       return badRequest('Invalid targetLanguage');
     }
-    if (!extension || !isDocumentExtension(extension)) return badRequest('Unsupported file extension');
+    if (!extension || !(isDocumentExtension(extension) || isImageExtension(extension))) {
+      return badRequest('Unsupported file extension');
+    }
 
     const source = sourceBlobName(uploadId, extension);
     const blob = await azure.blobs.getBlob(source);
     if (!blob) return badRequest('Source file not uploaded');
 
+    const refusal = await admitTranslation(deps, request, blob, extension);
+    if (refusal) return refusal;
+
     const startedAt = clock.now();
+    const logStarted = () =>
+      logEvent(context, 'translation.started', {
+        translationGuid: uploadId,
+        format: extension,
+        sizeInBytes: blob.sizeInBytes,
+        targetLanguage,
+      });
+
+    if (isImageExtension(extension)) {
+      // Document Intelligence reads the Image itself, through a short-lived read-only SAS.
+      const sourceUrl = await azure.blobs.createReadUrl(source, new Date(startedAt.getTime() + READ_SAS_MINUTES * 60_000));
+      const { operationId } = await azure.documentIntelligence.startRead({ sourceUrl });
+      logStarted();
+      const id = encodeTranslationId({ kind: 'image', guid: uploadId, extension, operationId, startedAt, targetLanguage });
+      const response: StartTranslationResponse = { id };
+      return { status: 202, jsonBody: response };
+    }
+
     let operationId: string;
     try {
       ({ operationId } = await azure.documentTranslation.startBatch({
@@ -60,15 +98,15 @@ export const createStartTranslationHandler: HttpHandlerFactory =
       }));
     } catch (error) {
       if (!(error instanceof AzureServiceError)) throw error;
-      return submitFailed(error, source, { translationGuid: uploadId, format: extension, sizeInBytes: blob.sizeInBytes, targetLanguage });
+      return submitFailed(error, 'startBatch', source, {
+        translationGuid: uploadId,
+        format: extension,
+        sizeInBytes: blob.sizeInBytes,
+        targetLanguage,
+      });
     }
 
-    logEvent(context, 'translation.started', {
-      translationGuid: uploadId,
-      format: extension,
-      sizeInBytes: blob.sizeInBytes,
-      targetLanguage,
-    });
+    logStarted();
     const id = encodeTranslationId({ kind: 'document', guid: uploadId, extension, operationId, startedAt });
     const response: StartTranslationResponse = { id };
     return { status: 202, jsonBody: response };

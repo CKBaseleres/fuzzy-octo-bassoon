@@ -1,8 +1,11 @@
 import type {
+  ApiErrorResponse,
   CreateUploadResponse,
   FailedTranslationResponse,
   HealthResponse,
   LanguagesResponse,
+  QuotaLimit,
+  RefusedResponse,
   StartTranslationResponse,
   TranslatedFileResponse,
   TranslationStatusResponse,
@@ -71,6 +74,30 @@ export const mockApi = {
     );
   },
 
+  /** `POST /api/translations/uploads` refused by a quota or the kill switch (429 + `Retry-After` in seconds). */
+  createUploadRefused(limit: QuotaLimit, retryAfterSeconds: number) {
+    server.use(
+      http.post<never, never, RefusedResponse>('/api/translations/uploads', () =>
+        HttpResponse.json(
+          { error: 'refused', limit },
+          { status: 429, headers: { 'retry-after': String(retryAfterSeconds) } },
+        ),
+      ),
+    );
+  },
+
+  /** `POST /api/translations` refused because the quota ran out after the upload SAS was issued. */
+  startTranslationRefused(limit: QuotaLimit, retryAfterSeconds: number) {
+    server.use(
+      http.post<never, never, RefusedResponse>('/api/translations', () =>
+        HttpResponse.json(
+          { error: 'refused', limit },
+          { status: 429, headers: { 'retry-after': String(retryAfterSeconds) } },
+        ),
+      ),
+    );
+  },
+
   /** The browser's direct `PUT` of the Source file to Blob Storage. Each call gets the next status; the last repeats. */
   blobUpload(...statuses: number[]) {
     const answers = statuses.length ? statuses : [201];
@@ -121,6 +148,15 @@ export const mockApi = {
           ...answer,
         });
       }),
+    );
+  },
+
+  /** `GET /api/translations/{id}/file` after the sweep removed the Translation's blobs. */
+  translatedFileExpired() {
+    server.use(
+      http.get<{ id: string }, never, ApiErrorResponse>('/api/translations/:id/file', () =>
+        HttpResponse.json({ error: 'expired' }, { status: 410 }),
+      ),
     );
   },
 

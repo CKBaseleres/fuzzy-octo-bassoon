@@ -185,7 +185,8 @@ describe('GET /api/translations/{id}: classifying a failed Document', () => {
     expect(logged).toContain('sig=REDACTED');
   });
 
-  it.each([400, 401, 403, 404])(
+  // (A 404 means the job is unknown: Expired, ticket 07.)
+  it.each([400, 401, 403])(
     'reports Service problem, at error level, when the status call is refused with %i',
     async (httpStatus) => {
       const api = createTestApi();

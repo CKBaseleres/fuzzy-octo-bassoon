@@ -1,27 +1,37 @@
-import type { DocumentExtension, FailedTranslationResponse, FailureCategory, FailureReason } from '@lingo-lens/shared';
+import type {
+  DocumentExtension,
+  FailedTranslationResponse,
+  FailureCategory,
+  FailureReason,
+  ImageExtension,
+  ImageTranslationResult,
+} from '@lingo-lens/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  HttpError,
   createUpload,
   deleteTranslation,
   downloadFromBlob,
   getTranslatedFile,
   getTranslationStatus,
+  HttpError,
   startTranslation,
   uploadToBlob,
 } from '../api/client';
+import { readRefusal, type Refusal } from './refusal';
 import { saveFile } from './saveFile';
 import { translatedFileName } from './sourceFile';
 
 export interface TranslationRequest {
   file: File;
-  extension: DocumentExtension;
+  extension: DocumentExtension | ImageExtension;
   targetLanguage: string;
 }
 
 export interface Failure {
   category: FailureCategory;
   reason?: FailureReason;
+  /** Set with category `refused`: a quota or the kill switch said no (ticket 08). */
+  refusal?: Refusal;
 }
 
 /**
@@ -38,9 +48,14 @@ export type TranslationState =
       request: TranslationRequest;
       id: string;
       guid: string;
+      /** Document: the Translated file, kept in memory for "Save again". */
       saved?: { blob: Blob; fileName: string };
-      /** The last download or save failed; the Translation stays Ready and can be fetched again. */
+      /** Document: the last download or save failed; the Translation stays Ready and can be fetched again. */
       downloadFailed?: boolean;
+      /** Image: the result, held only in memory (Azure has already deleted everything). */
+      image?: ImageTranslationResult;
+      /** Image: an object URL of the Source file, so it is shown without being downloaded back. */
+      imageUrl?: string;
     }
   | ({ phase: 'failed'; request: TranslationRequest; id?: string; guid?: string } & Failure);
 
@@ -62,30 +77,46 @@ async function reportedFailure(error: unknown): Promise<Failure | undefined> {
   }
 }
 
+/** A refusal (429, ticket 08), a failure the API reported (502), or Service problem. */
+async function requestFailure(error: unknown): Promise<Failure> {
+  const refusal = await readRefusal(error);
+  if (refusal) return { category: 'refused', refusal };
+  return (await reportedFailure(error)) ?? SERVICE_PROBLEM;
+}
+
+/** 410 from the file request: the sweep removed the Translation's blobs (ticket 07). */
+const isExpired = (error: unknown) => error instanceof HttpError && error.status === 410;
+
 /** Best effort: the timer sweep is the backstop. */
 const deleteQuietly = (id: string) => deleteTranslation(id).catch(() => undefined);
 
 /**
- * Runs a Document Translation end to end:
- * upload SAS -> PUT to Blob -> start -> poll -> file SAS -> fetch -> save -> DELETE.
- * Every failure after upload ends in `failed` with a category, and DELETEs at once.
- *
- * Plug-in points: 08 maps `createUpload` refusals in `uploadRefusal`; 07 maps Expired
- * (e.g. the file SAS 404) in `download`; 05 adds the Image branch after `startTranslation`.
+ * Runs a Translation end to end:
+ * upload SAS -> PUT to Blob -> start -> poll -> (Document) file SAS -> fetch -> save -> DELETE.
+ * Every failure after upload ends in `failed` with a category and DELETEs at once;
+ * a failed download leaves the Translation Ready ("Download failed. Try again").
+ * For an Image the ready poll carries the whole result and the run ends there.
  */
 export function useDocumentTranslation({ pollIntervalMs }: { pollIntervalMs: number }) {
   const [state, setState] = useState<TranslationState>({ phase: 'idle' });
   // Bumped on reset/unmount so a stale run stops touching state.
   const runRef = useRef(0);
+  // The object URL showing an Image result; revoked when the result goes away.
+  const imageUrlRef = useRef<string | undefined>(undefined);
+  const releaseImage = useCallback(() => {
+    if (imageUrlRef.current) URL.revokeObjectURL(imageUrlRef.current);
+    imageUrlRef.current = undefined;
+  }, []);
 
   useEffect(
     () => () => {
       runRef.current++;
+      releaseImage();
     },
-    [],
+    [releaseImage],
   );
 
-  /** Fetches a fresh file SAS, downloads and saves; on failure the Translation stays Ready. */
+  /** Fetches a fresh file SAS, downloads and saves. Only a successful save DELETEs. */
   const download = useCallback(async (request: TranslationRequest, id: string, guid: string, live: () => boolean) => {
     try {
       const file = await getTranslatedFile(id);
@@ -94,17 +125,20 @@ export function useDocumentTranslation({ pollIntervalMs }: { pollIntervalMs: num
       const fileName = translatedFileName(request.file.name, request.targetLanguage, file.extension);
       saveFile(blob, fileName);
       setState({ phase: 'ready', request, id, guid, saved: { blob, fileName } });
-    } catch {
-      if (live()) setState({ phase: 'ready', request, id, guid, downloadFailed: true });
+    } catch (error) {
+      if (!live()) return;
+      if (isExpired(error)) setState({ phase: 'failed', request, id, guid, category: 'expired' });
+      else setState({ phase: 'ready', request, id, guid, downloadFailed: true });
       return;
     }
-    // Only after a successful save: the Translated file now lives in memory only.
+    // The Translated file now lives in memory only.
     await deleteQuietly(id);
   }, []);
 
   const start = useCallback(
     async (request: TranslationRequest) => {
       const run = ++runRef.current;
+      releaseImage();
       const live = () => runRef.current === run;
       let guid: string | undefined;
       let id: string | undefined;
@@ -118,7 +152,7 @@ export function useDocumentTranslation({ pollIntervalMs }: { pollIntervalMs: num
       try {
         ({ uploadId: guid, uploadUrl } = await createUpload({ extension: request.extension }));
       } catch (error) {
-        return fail((await uploadRefusal(error)) ?? SERVICE_PROBLEM);
+        return fail(await requestFailure(error));
       }
       try {
         await uploadToBlob(uploadUrl, request.file);
@@ -130,7 +164,7 @@ export function useDocumentTranslation({ pollIntervalMs }: { pollIntervalMs: num
       try {
         ({ id } = await startTranslation({ uploadId: guid, extension: request.extension, targetLanguage: request.targetLanguage }));
       } catch (error) {
-        return fail((await reportedFailure(error)) ?? SERVICE_PROBLEM);
+        return fail(await requestFailure(error));
       }
       if (!live()) return;
       setState({ phase: 'translating', request, id, guid });
@@ -141,6 +175,13 @@ export function useDocumentTranslation({ pollIntervalMs }: { pollIntervalMs: num
           failedPolls = 0;
           if (!live()) return;
           if (status.status === 'failed') return fail({ category: status.category, reason: status.reason });
+          if (status.status === 'ready' && status.kind === 'image') {
+            // The poll that returned the result also deleted the Image and the analyze result.
+            const { status: _status, kind: _kind, ...image } = status;
+            const imageUrl = (imageUrlRef.current = URL.createObjectURL(request.file));
+            setState({ phase: 'ready', request, id, guid, image, imageUrl });
+            return;
+          }
           if (status.status === 'ready') break;
         } catch {
           if (!live()) return;
@@ -152,9 +193,10 @@ export function useDocumentTranslation({ pollIntervalMs }: { pollIntervalMs: num
 
       await download(request, id, guid, live);
     },
-    [pollIntervalMs, download],
+    [pollIntervalMs, releaseImage, download],
   );
 
+  /** "Download failed. Try again": a new file SAS, then download and save again. */
   const retryDownload = useCallback(() => {
     if (state.phase !== 'ready') return;
     const run = runRef.current;
@@ -167,13 +209,14 @@ export function useDocumentTranslation({ pollIntervalMs }: { pollIntervalMs: num
 
   const reset = useCallback(() => {
     runRef.current++;
+    releaseImage();
     setState({ phase: 'idle' });
-  }, []);
+  }, [releaseImage]);
 
-  return { state, start, saveAgain, retryDownload, reset };
-}
+  /** Runs the whole Translation again with the same in-memory file and target language. */
+  const translateAgain = useCallback(() => {
+    if (state.phase === 'failed') void start(state.request);
+  }, [state, start]);
 
-/** `POST /api/translations/uploads` failed. Ticket 08 maps 429/503 to Refused here. */
-async function uploadRefusal(error: unknown): Promise<Failure | undefined> {
-  return reportedFailure(error);
+  return { state, start, saveAgain, retryDownload, reset, translateAgain };
 }

@@ -10,6 +10,7 @@ import {
 
 export interface FakeBatchJob extends BatchStatus {
   request: { sourceBlobName: string; targetBlobName: string; targetLanguage: string };
+  createdOn: Date;
 }
 
 export interface FakeReadOperation extends ReadOperation {
@@ -154,13 +155,13 @@ function createInMemoryServices(clock: Clock): { state: FakeAzureState; ports: A
     documentTranslation: {
       startBatch: (request) => {
         const operationId = `batch-${nextId++}`;
-        batchJobs.set(operationId, { status: 'NotStarted', request });
+        batchJobs.set(operationId, { status: 'NotStarted', request, createdOn: clock.now() });
         return Promise.resolve({ operationId });
       },
       getBatchStatus: (operationId) => {
         const job = batchJobs.get(operationId);
         if (!job) return Promise.reject(notFound('documentTranslation', operationId));
-        const { request: _request, ...status } = job;
+        const { request: _request, createdOn: _createdOn, ...status } = job;
         return Promise.resolve(status);
       },
       cancelBatch: (operationId) => {
@@ -169,6 +170,12 @@ function createInMemoryServices(clock: Clock): { state: FakeAzureState; ports: A
         job.status = 'Cancelled';
         return Promise.resolve();
       },
+      listActiveBatches: (createdBefore) =>
+        Promise.resolve(
+          [...batchJobs]
+            .filter(([, job]) => (job.status === 'NotStarted' || job.status === 'Running') && job.createdOn < createdBefore)
+            .map(([operationId]) => operationId),
+        ),
     },
 
     documentIntelligence: {

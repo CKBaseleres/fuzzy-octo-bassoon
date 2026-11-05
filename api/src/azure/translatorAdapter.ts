@@ -16,13 +16,13 @@ const COGNITIVE_SERVICES_SCOPE = 'https://cognitiveservices.azure.com/.default';
 const LANGUAGES_URL = 'https://api.cognitive.microsofttranslator.com/languages?api-version=3.0&scope=translation';
 const LANGUAGES_CACHE_MS = 24 * 60 * 60_000;
 
-interface RawError {
+export interface RawError {
   code?: string;
   message?: string;
   innerError?: { code?: string; message?: string };
 }
 
-const toErrorBody = (raw: RawError | undefined): AzureErrorBody | undefined =>
+export const toErrorBody = (raw: RawError | undefined): AzureErrorBody | undefined =>
   raw?.code
     ? {
         code: raw.code,
@@ -32,11 +32,10 @@ const toErrorBody = (raw: RawError | undefined): AzureErrorBody | undefined =>
     : undefined;
 
 /** Azure's request id, for error logs. */
-const requestIdOf = (response: Response) =>
+export const requestIdOf = (response: Response) =>
   response.headers.get('apim-request-id') ?? response.headers.get('x-requestid') ?? undefined;
 
-async function failure(service: AzureServiceName, response: Response): Promise<AzureServiceError> {
-  let raw: RawError | undefined;
+export async function failure(service: AzureServiceName, response: Response): Promise<AzureServiceError> {  let raw: RawError | undefined;
   try {
     raw = ((await response.json()) as { error?: RawError }).error;
   } catch {
@@ -149,6 +148,28 @@ export function createDocumentTranslationAdapter(options: {
 
     async cancelBatch(operationId) {
       await call('DELETE', url(`batches/${encodeURIComponent(operationId)}`));
+    },
+
+    async listActiveBatches(createdBefore) {
+      // Get Translations Status, filtered server side and checked again here (ticket 01
+      // must confirm the `statuses` format on the 2026-03-01 API). Follows `@nextLink`.
+      const first = url('batches');
+      first.searchParams.set('statuses', 'NotStarted,Running');
+      first.searchParams.set('createdDateTimeUtcEnd', createdBefore.toISOString());
+      const ids: string[] = [];
+      let next: URL | undefined = first;
+      while (next) {
+        const page = (await (await call('GET', next)).json()) as {
+          value?: { id: string; status: BatchJobStatus; createdDateTimeUtc: string }[];
+          '@nextLink'?: string | null;
+        };
+        for (const job of page.value ?? []) {
+          const active = job.status === 'NotStarted' || job.status === 'Running';
+          if (active && new Date(job.createdDateTimeUtc) < createdBefore) ids.push(job.id);
+        }
+        next = page['@nextLink'] ? new URL(page['@nextLink']) : undefined;
+      }
+      return ids;
     },
   };
 }

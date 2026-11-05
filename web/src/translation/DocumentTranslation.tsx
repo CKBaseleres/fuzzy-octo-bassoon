@@ -7,6 +7,7 @@ import {
   Select,
   Text,
   makeStyles,
+  mergeClasses,
   tokens,
   typographyStyles,
 } from '@fluentui/react-components';
@@ -15,6 +16,8 @@ import { useEffect, useId, useRef, useState, type ChangeEvent } from 'react';
 import { getLanguages } from '../api/client';
 import { FailureMessageBar } from './FailureMessageBar';
 import type { FailureAction } from './failureMessages';
+import { ImageResult } from './ImageResult';
+import { RefusedMessage } from './refusal';
 import { ACCEPT, checkSourceFile, type SourceFileCheck } from './sourceFile';
 import { useDocumentTranslation } from './useDocumentTranslation';
 
@@ -24,6 +27,10 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     gap: tokens.spacingVerticalL,
     maxWidth: '36rem',
+  },
+  /** The Image result uses the full width (two columns). */
+  wide: {
+    maxWidth: 'none',
   },
   result: {
     display: 'flex',
@@ -58,7 +65,7 @@ export function DocumentTranslation({ pollIntervalMs = 2000 }: { pollIntervalMs?
   const [file, setFile] = useState<File>();
   const [check, setCheck] = useState<SourceFileCheck>();
   const [targetLanguage, setTargetLanguage] = useState('');
-  const { state, start, saveAgain, retryDownload, reset } = useDocumentTranslation({ pollIntervalMs });
+  const { state, start, saveAgain, retryDownload, reset, translateAgain } = useDocumentTranslation({ pollIntervalMs });
   const resultHeading = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -83,19 +90,24 @@ export function DocumentTranslation({ pollIntervalMs = 2000 }: { pollIntervalMs?
   };
 
   const busy = state.phase === 'uploading' || state.phase === 'translating';
+  const refusal = state.phase === 'failed' ? state.refusal : undefined;
   const canStart = !busy && file !== undefined && check?.ok === true && targetLanguage !== '';
   const onTranslate = () => {
     if (canStart && file && check.ok) void start({ file, extension: check.extension, targetLanguage });
   };
   const onFailureAction = (action: FailureAction) => {
-    if (state.phase !== 'failed') return;
-    if (action.kind === 'retry') void start(state.request);
+    if (action.kind === 'retry') translateAgain();
     else reset();
   };
 
   return (
-    <section className={styles.form} aria-label="Translate a file">
-      {state.phase === 'idle' || busy ? (
+    <section
+      className={mergeClasses(styles.form, state.phase === 'ready' && state.image && styles.wide)}
+      aria-label="Translate a file"
+    >
+      {refusal && <RefusedMessage refusal={refusal} />}
+
+      {state.phase === 'idle' || busy || refusal ? (
         <>
           <Field
             label={{ children: 'File to translate', htmlFor: fileInputId }}
@@ -133,7 +145,8 @@ export function DocumentTranslation({ pollIntervalMs = 2000 }: { pollIntervalMs?
       <Text role="status" aria-live="polite">
         {STATUS_TEXT[state.phase]}
       </Text>
-      {state.phase === 'failed' && (
+      {/* Refusals (ticket 08) show above the form instead. */}
+      {state.phase === 'failed' && !refusal && (
         <FailureMessageBar
           // A new failure (e.g. after Try again) mounts a new bar, so focus moves again.
           key={`${state.guid ?? ''}-${state.category}`}
@@ -143,7 +156,19 @@ export function DocumentTranslation({ pollIntervalMs = 2000 }: { pollIntervalMs?
         />
       )}
 
-      {state.phase === 'ready' && (
+      {state.phase === 'ready' && state.image && state.imageUrl && (
+        <ImageResult
+          fileName={state.request.file.name}
+          imageUrl={state.imageUrl}
+          result={state.image}
+          targetLanguage={state.request.targetLanguage}
+          languages={languages}
+          headingRef={resultHeading}
+          onNewTranslation={reset}
+        />
+      )}
+
+      {state.phase === 'ready' && !state.image && (
         <div className={styles.result}>
           <h2 className={styles.heading} ref={resultHeading} tabIndex={-1}>
             Your translation is ready
@@ -168,7 +193,6 @@ export function DocumentTranslation({ pollIntervalMs = 2000 }: { pollIntervalMs?
           </div>
         </div>
       )}
-
     </section>
   );
 }

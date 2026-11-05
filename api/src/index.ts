@@ -5,6 +5,7 @@ import { DefaultAzureCredential } from '@azure/identity';
 import { createAzureServices } from './azure/azureServices';
 import { withinRequestBudget, withRetries } from './azure/retries';
 import { systemClock } from './clock';
+import { apiHeadersHook } from './guardrails/apiHeaders';
 import { DEFAULT_TIMEOUTS, type Deps } from './deps';
 import { createUploadHandler } from './functions/createUpload';
 import { createDeleteTranslationHandler } from './functions/deleteTranslation';
@@ -13,11 +14,18 @@ import { createGetTranslatedFileHandler } from './functions/getTranslatedFile';
 import { createGetTranslationHandler } from './functions/getTranslation';
 import { createHealthHandler } from './functions/health';
 import { createStartTranslationHandler } from './functions/startTranslation';
+import { createSweepHandler, SWEEP_SCHEDULE } from './functions/sweep';
 
 /** App settings are read lazily so a missing one fails the request, not host start-up (and /api/health keeps working). */
 const setting = (name: string) => process.env[name] ?? '';
 
-/** A positive whole number of minutes, or the spec's default. */
+/** A quota setting; anything but a whole number >= 0 fails safe to 0 (refuse every Translation). */
+const quota = (name: string) => {
+  const value = Number(setting(name).trim() || NaN);
+  return Number.isInteger(value) && value >= 0 ? value : 0;
+};
+
+/** A positive number of minutes, or the spec's default. */
 const minutes = (name: string, fallback: number) => {
   const value = Number(setting(name));
   return Number.isFinite(value) && value > 0 ? value : fallback;
@@ -32,12 +40,20 @@ const deps: Deps = {
         blobEndpoint: setting('STORAGE_BLOB_ENDPOINT'),
         translatorEndpoint: setting('TRANSLATOR_ENDPOINT'),
         documentIntelligenceEndpoint: setting('DOCUMENT_INTELLIGENCE_ENDPOINT'),
+        tableEndpoint: setting('STORAGE_TABLE_ENDPOINT'),
+        quotaTableName: setting('QUOTA_TABLE_NAME'),
       },
       new DefaultAzureCredential(),
     ),
     systemClock,
   ),
   clock: systemClock,
+  // Changing an app setting restarts the app, so reading these once is enough.
+  limits: {
+    translationsEnabled: setting('TRANSLATIONS_ENABLED').trim().toLowerCase() === 'true',
+    dailyQuota: quota('DAILY_TRANSLATION_QUOTA'),
+    hourlyPerIpQuota: quota('HOURLY_PER_IP_QUOTA'),
+  },
   timeouts: {
     documentMinutes: minutes('DOCUMENT_TIMEOUT_MINUTES', DEFAULT_TIMEOUTS.documentMinutes),
     imageMinutes: minutes('IMAGE_TIMEOUT_MINUTES', DEFAULT_TIMEOUTS.imageMinutes),
@@ -51,6 +67,9 @@ app.hook.preInvocation((hook) => {
   hook.functionHandler = (trigger, context) =>
     withinRequestBudget(systemClock, () => handler(trigger, context) as unknown);
 });
+
+// X-Robots-Tag: noindex on every /api response (SWA globalHeaders skip the API).
+app.hook.postInvocation(apiHeadersHook);
 
 app.http('health', {
   route: 'health',
@@ -99,4 +118,10 @@ app.http('getTranslatedFile', {
   methods: ['GET'],
   authLevel: 'anonymous',
   handler: createGetTranslatedFileHandler(deps),
+});
+
+// Retention (ticket 07): every 5 minutes, delete blobs older than 60 minutes and cancel their jobs.
+app.timer('retentionSweep', {
+  schedule: SWEEP_SCHEDULE,
+  handler: createSweepHandler(deps),
 });
