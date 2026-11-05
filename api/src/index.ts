@@ -12,6 +12,7 @@ import { createGetTranslatedFileHandler } from './functions/getTranslatedFile';
 import { createGetTranslationHandler } from './functions/getTranslation';
 import { createHealthHandler } from './functions/health';
 import { createStartTranslationHandler } from './functions/startTranslation';
+import { createSweepHandler, SWEEP_SCHEDULE } from './functions/sweep';
 
 /** App settings are read lazily so a missing one fails the request, not host start-up (and /api/health keeps working). */
 const setting = (name: string) => process.env[name] ?? '';
@@ -76,4 +77,10 @@ app.http('getTranslatedFile', {
   methods: ['GET'],
   authLevel: 'anonymous',
   handler: createGetTranslatedFileHandler(deps),
+});
+
+// Retention (ticket 07): every 5 minutes, delete blobs older than 60 minutes and cancel their jobs.
+app.timer('retentionSweep', {
+  schedule: SWEEP_SCHEDULE,
+  handler: createSweepHandler(deps),
 });

@@ -188,6 +188,18 @@ describe('Image Translation: GET /api/translations/{id}', () => {
     expect(api.azure.state.blobs.has(t.sourceBlobName)).toBe(false);
   });
 
+  it('reports Expired once Document Intelligence no longer knows the analyze result', async () => {
+    const api = createTestApi();
+    const t = await startImageTranslation(api);
+    t.succeed(CAFE_SIGN);
+    await poll(api, t.id);
+
+    const later = await poll(api, t.id);
+
+    expect(later.status).toBe(200);
+    expect(later.json<TranslationStatusResponse>()).toEqual({ status: 'failed', category: 'expired' });
+  });
+
   it('logs the end of the Translation with the detected language, and no text', async () => {
     const api = createTestApi({ now: '2026-03-01T10:00:00.000Z' });
     const t = await startImageTranslation(api, { extension: 'png' });

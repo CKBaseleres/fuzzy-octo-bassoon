@@ -163,8 +163,8 @@ export interface TranslatedFileResponse {
 
 // --- Errors ----------------------------------------------------------------------
 
-/** Body of any 4xx the API returns for a bad request. */
+/** Body of any 4xx the API returns. `expired` comes with 410 from `GET /api/translations/{id}/file`. */
 export interface ApiErrorResponse {
-  error: 'badRequest' | 'notFound';
+  error: 'badRequest' | 'notFound' | 'expired';
   message?: string;
 }

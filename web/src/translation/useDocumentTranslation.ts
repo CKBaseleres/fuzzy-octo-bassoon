@@ -12,6 +12,7 @@ import {
   downloadFromBlob,
   getTranslatedFile,
   getTranslationStatus,
+  HttpError,
   startTranslation,
   uploadToBlob,
 } from '../api/client';
@@ -121,8 +122,10 @@ export function useDocumentTranslation({ pollIntervalMs }: { pollIntervalMs: num
         setState({ phase: 'ready', request, id, saved: { blob, fileName } });
         // Only after a successful save: the Translated file now lives in memory only.
         await deleteTranslation(id);
-      } catch {
-        if (live()) setState({ phase: 'failed', request, id, category: 'serviceProblem' });
+      } catch (error) {
+        // 410 from the file request: the sweep removed the Translation's blobs (ticket 07).
+        const category = error instanceof HttpError && error.status === 410 ? 'expired' : 'serviceProblem';
+        if (live()) setState({ phase: 'failed', request, id, category });
       }
     },
     [pollIntervalMs, releaseImage],
@@ -138,5 +141,10 @@ export function useDocumentTranslation({ pollIntervalMs }: { pollIntervalMs: num
     setState({ phase: 'idle' });
   }, [releaseImage]);
 
-  return { state, start, saveAgain, reset };
+  /** Runs the whole Translation again with the same in-memory file and target language. */
+  const translateAgain = useCallback(() => {
+    if (state.phase === 'failed') void start(state.request);
+  }, [state, start]);
+
+  return { state, start, saveAgain, reset, translateAgain };
 }

@@ -3,6 +3,7 @@ import type { TranslationStatusResponse } from '@lingo-lens/shared';
 import { AzureServiceError } from '../azure/port';
 import type { Deps } from '../deps';
 import { sourceBlobName } from './blobNames';
+import { EXPIRED, isUnknownOperation } from './expiry';
 import { isReadTerminal, mapReadStatus, mostCommonLanguage, translateParagraphs } from './imageStatus';
 import { logEvent } from './log';
 import type { TranslationRef } from './translationId';
@@ -16,15 +17,22 @@ import type { TranslationRef } from './translationId';
  * If Translator fails, nothing is deleted and the next poll tries again.
  *
  * Plug-in points: ticket 10 maps a failed read (and zero paragraphs, as
- * `noTextFound`) through the classifier; 09 adds the timeout from `ref.startedAt`;
- * 07 maps a vanished analyze result (404) to Expired.
+ * `noTextFound`) through the classifier; 09 adds the timeout from `ref.startedAt`.
+ * A vanished analyze result (404) is Expired (ticket 07's rule).
  */
 export async function pollImageTranslation(
   { azure, clock }: Deps,
   ref: TranslationRef & { targetLanguage: string },
   context: InvocationContext,
 ): Promise<TranslationStatusResponse> {
-  const read = await azure.documentIntelligence.getReadResult(ref.operationId);
+  let read;
+  try {
+    read = await azure.documentIntelligence.getReadResult(ref.operationId);
+  } catch (error) {
+    // Deleted after the ready poll (or purged by Azure after 24 h): nothing is left to show.
+    if (isUnknownOperation(error)) return EXPIRED;
+    throw error;
+  }
   if (!isReadTerminal(read.status)) return mapReadStatus(read);
 
   let response: TranslationStatusResponse;

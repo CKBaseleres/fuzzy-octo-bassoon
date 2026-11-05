@@ -87,6 +87,11 @@ export interface DocumentTranslationPort {
   }): Promise<{ operationId: string }>;
   getBatchStatus(operationId: string): Promise<BatchStatus>;
   cancelBatch(operationId: string): Promise<void>;
+  /**
+   * Operation ids of jobs still `NotStarted` or `Running` that were created before
+   * `createdBefore` (Translator's list endpoint, filtered by status and creation time).
+   */
+  listActiveBatches(createdBefore: Date): Promise<string[]>;
 }
 
 // --- Document Intelligence prebuilt-read ------------------------------------
