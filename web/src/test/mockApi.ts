@@ -1,4 +1,5 @@
 import type {
+  ApiErrorResponse,
   CreateUploadResponse,
   HealthResponse,
   LanguagesResponse,
@@ -88,6 +89,15 @@ export const mockApi = {
           extension: 'pdf',
           ...body,
         }),
+      ),
+    );
+  },
+
+  /** `GET /api/translations/{id}/file` after the sweep removed the Translation's blobs. */
+  translatedFileExpired() {
+    server.use(
+      http.get<{ id: string }, never, ApiErrorResponse>('/api/translations/:id/file', () =>
+        HttpResponse.json({ error: 'expired' }, { status: 410 }),
       ),
     );
   },
