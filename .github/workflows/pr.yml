@@ -16,6 +16,9 @@ jobs:
   check:
     name: Lint, typecheck, test, build
     runs-on: ubuntu-latest
+    env:
+      # infra tests compile the Bicep; fail rather than skip if the CLI is missing.
+      REQUIRE_BICEP: '1'
     steps:
       - uses: actions/checkout@v4
 
@@ -26,10 +29,44 @@ jobs:
 
       - run: npm ci
 
+      # Standalone Bicep CLI at ~/.azure/bin/bicep, which infra/tests/bicep.ts finds.
+      - name: Install Bicep CLI
+        run: az bicep install
+
       # Each step runs across every workspace (shared, api, web, infra).
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
 
-  # Later tickets add: axe checks (ticket 12) and Bicep what-if against dev (ticket 03).
+  what-if:
+    name: Bicep what-if against dev
+    runs-on: ubuntu-latest
+    # Needs the bootstrap (repo variables set) and an OIDC token, which GitHub
+    # does not issue to pull requests from forks.
+    if: >-
+      vars.AZURE_DEV_CLIENT_ID != '' &&
+      (github.event_name != 'pull_request' ||
+       github.event.pull_request.head.repo.full_name == github.repository)
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # No GitHub Environment here (so deployment-branch rules on `dev` do not block
+      # PRs); the dev identity trusts this repo's pull_request subject instead.
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_DEV_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: What-if
+        run: |
+          az deployment group what-if \
+            --resource-group rg-lingolens-dev \
+            --template-file infra/main.bicep \
+            --parameters infra/dev.bicepparam
+
+  # Later tickets add: axe checks (ticket 12).

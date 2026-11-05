@@ -1,0 +1,46 @@
+name: Deploy infrastructure (reusable)
+
+# Called by infra.yml once per environment. Signs in with the environment's
+# deploy identity (OIDC, no stored secrets) and deploys infra/main.bicep.
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: dev or prod
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    name: Bicep deploy (${{ inputs.environment }})
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    # Shared with app.yml so infra and app deploys to one environment never overlap.
+    concurrency:
+      group: deploy-${{ inputs.environment }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy main.bicep
+        env:
+          ENVIRONMENT: ${{ inputs.environment }}
+        run: |
+          az deployment group create \
+            --name "lingolens-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            --resource-group "rg-lingolens-${ENVIRONMENT}" \
+            --template-file infra/main.bicep \
+            --parameters "infra/${ENVIRONMENT}.bicepparam" \
+            --query properties.outputs \
+            --output json
