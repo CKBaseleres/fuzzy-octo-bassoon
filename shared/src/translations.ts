@@ -116,9 +116,38 @@ export type FailureCategory = 'uploadFailed' | 'refused' | 'cantTranslate' | 'no
 
 export type FailureReason = 'passwordProtected' | 'damaged' | 'badDimensions';
 
+/** One paragraph of an Image, as `prebuilt-read` found it, with its translation. */
+export interface ImageParagraph {
+  /**
+   * Flat `[x1, y1, x2, y2, ...]` in the page's pixel units, clockwise from the
+   * top-left, exactly as Document Intelligence returns it. Draw it in an SVG
+   * whose `viewBox` is `0 0 page.width page.height`.
+   */
+  polygon: number[];
+  /** The text read from the Image. */
+  original: string;
+  /** The text in the target language. */
+  translation: string;
+  /** Translator's auto-detected source language for this paragraph, if any. */
+  detectedLanguage?: string;
+}
+
+/** The result of an Image Translation. Azure keeps none of it. */
+export interface ImageTranslationResult {
+  /** The analysed page's size in pixels. */
+  page: { width: number; height: number };
+  /** In reading order. Empty when no text was found (ticket 10 turns that into `noTextFound`). */
+  paragraphs: ImageParagraph[];
+  /** The most common detected language across the paragraphs. */
+  detectedLanguage?: string;
+  /** Some of the text is handwritten. */
+  isHandwritten: boolean;
+}
+
 export type TranslationStatusResponse =
   | { status: 'translating' }
   | { status: 'ready'; kind: 'document' }
+  | ({ status: 'ready'; kind: 'image' } & ImageTranslationResult)
   | { status: 'failed'; category: FailureCategory; reason?: FailureReason };
 
 // --- GET /api/translations/{id}/file --------------------------------------------
