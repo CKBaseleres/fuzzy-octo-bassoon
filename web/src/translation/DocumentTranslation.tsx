@@ -16,7 +16,7 @@ import { useEffect, useId, useRef, useState, type ChangeEvent } from 'react';
 import { getLanguages } from '../api/client';
 import { FailureMessageBar } from './FailureMessageBar';
 import type { FailureAction } from './failureMessages';
-import { ImageResult } from './ImageResult';
+import { ImageNoText, ImageResult } from './ImageResult';
 import { RefusedMessage } from './refusal';
 import { ACCEPT, checkSourceFile, type SourceFileCheck } from './sourceFile';
 import { useDocumentTranslation } from './useDocumentTranslation';
@@ -104,9 +104,21 @@ export function DocumentTranslation({ pollIntervalMs = 2000 }: { pollIntervalMs?
     else reset();
   };
 
+  const failureBar = state.phase === 'failed' && !refusal && (
+    <FailureMessageBar
+      // A new failure (e.g. after Try again) mounts a new bar, so focus moves again.
+      key={`${state.guid ?? ''}-${state.category}`}
+      failure={{ category: state.category, reason: state.reason, extension: state.request.extension }}
+      guid={state.guid}
+      onAction={onFailureAction}
+    />
+  );
+  /** No text found keeps the Image on screen, the message beside it (ticket 10). */
+  const failedImageUrl = state.phase === 'failed' ? state.imageUrl : undefined;
+
   return (
     <section
-      className={mergeClasses(styles.form, state.phase === 'ready' && state.image && styles.wide)}
+      className={mergeClasses(styles.form, ((state.phase === 'ready' && state.image) || failedImageUrl) && styles.wide)}
       aria-label="Translate a file"
     >
       {refusal && <RefusedMessage refusal={refusal} />}
@@ -150,14 +162,10 @@ export function DocumentTranslation({ pollIntervalMs = 2000 }: { pollIntervalMs?
         {STATUS_TEXT[state.phase]}
       </Text>
       {/* Refusals (ticket 08) show above the form instead. */}
-      {state.phase === 'failed' && !refusal && (
-        <FailureMessageBar
-          // A new failure (e.g. after Try again) mounts a new bar, so focus moves again.
-          key={`${state.guid ?? ''}-${state.category}`}
-          failure={{ category: state.category, reason: state.reason, extension: state.request.extension }}
-          guid={state.guid}
-          onAction={onFailureAction}
-        />
+      {failureBar && failedImageUrl ? (
+        <ImageNoText fileName={state.request.file.name} imageUrl={failedImageUrl} message={failureBar} />
+      ) : (
+        failureBar
       )}
 
       {state.phase === 'ready' && state.image && state.imageUrl && (

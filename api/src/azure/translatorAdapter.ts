@@ -17,19 +17,23 @@ const LANGUAGES_URL = 'https://api.cognitive.microsofttranslator.com/languages?a
 const LANGUAGES_CACHE_MS = 24 * 60 * 60_000;
 
 export interface RawError {
-  code?: string;
+  /** Translator text v3 sends a number (e.g. `400050`); the other services send a string. */
+  code?: string | number;
   message?: string;
   innerError?: { code?: string; message?: string };
+  /** Document Intelligence spells it in lower case. */
+  innererror?: { code?: string; message?: string };
 }
 
-export const toErrorBody = (raw: RawError | undefined): AzureErrorBody | undefined =>
-  raw?.code
-    ? {
-        code: raw.code,
-        ...(raw.message ? { message: raw.message.slice(0, 300) } : {}),
-        ...(raw.innerError?.code ? { innerErrorCode: raw.innerError.code } : {}),
-      }
-    : undefined;
+export function toErrorBody(raw: RawError | undefined): AzureErrorBody | undefined {
+  if (raw?.code === undefined || raw.code === '') return undefined;
+  const innerCode = (raw.innerError ?? raw.innererror)?.code;
+  return {
+    code: String(raw.code),
+    ...(raw.message ? { message: raw.message.slice(0, 300) } : {}),
+    ...(innerCode ? { innerErrorCode: innerCode } : {}),
+  };
+}
 
 /** Azure's request id, for error logs. */
 export const requestIdOf = (response: Response) =>

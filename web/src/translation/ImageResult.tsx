@@ -1,6 +1,6 @@
 import { Badge, Button, Switch, Text, makeStyles, mergeClasses, tokens, typographyStyles } from '@fluentui/react-components';
 import type { ImageTranslationResult, Language } from '@lingo-lens/shared';
-import { useId, useState, type Ref } from 'react';
+import { useId, useState, type ReactNode, type Ref } from 'react';
 import { useBlockLinking } from './useBlockLinking';
 
 /**
@@ -9,7 +9,7 @@ import { useBlockLinking } from './useBlockLinking';
  *
  * Ticket 06 adds the interaction (hover/focus preview, selected block, linking
  * both ways, Show original), the highlight styling and the stacked layout
- * below 768 px. Ticket 10 adds the no-text state.
+ * below 768 px. `ImageNoText` (ticket 10) is the No text found state.
  */
 /** Below 768 CSS px the two columns stack (spec: Status, errors and accessibility). */
 const NARROW = '@media (max-width: 767.98px)';
@@ -347,6 +347,30 @@ export function ImageResult({
             ))}
           </ul>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * No text found (spec: "Image result screen"): the Image is still shown, with
+ * the warning (`message`, a `FailureMessageBar`) in place of the card list.
+ * No overlay, cards, linking or Show original: there is nothing to link.
+ */
+export function ImageNoText({ fileName, imageUrl, message }: { fileName: string; imageUrl: string; message: ReactNode }) {
+  const styles = useStyles();
+  return (
+    <div className={styles.root}>
+      <div className={styles.bar}>
+        <h2 className={styles.fileName}>{fileName}</h2>
+      </div>
+      <div className={styles.split}>
+        <div className={styles.imageCard}>
+          <div className={styles.stage}>
+            <img className={styles.image} src={imageUrl} alt={`${fileName}, no text found`} />
+          </div>
+        </div>
+        <div>{message}</div>
       </div>
     </div>
   );

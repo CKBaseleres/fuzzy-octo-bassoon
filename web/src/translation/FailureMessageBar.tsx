@@ -1,4 +1,4 @@
-import { Button, MessageBar, MessageBarActions, MessageBarBody } from '@fluentui/react-components';
+import { Button, MessageBar, MessageBarActions, MessageBarBody, MessageBarTitle } from '@fluentui/react-components';
 import { useEffect, useRef } from 'react';
 import { failureMessage, referenceCode, type FailureAction, type FailureDetails } from './failureMessages';
 
@@ -26,7 +26,10 @@ export function FailureMessageBar({
   return (
     <MessageBar ref={ref} tabIndex={-1} intent={message.intent} layout="multiline">
       <MessageBarBody>
-        <div>{message.text}</div>
+        <div>
+          {message.title && <MessageBarTitle>{message.title}</MessageBarTitle>}
+          {message.text}
+        </div>
         {guid && <div>Reference: {referenceCode(guid)}</div>}
       </MessageBarBody>
       {message.action && (

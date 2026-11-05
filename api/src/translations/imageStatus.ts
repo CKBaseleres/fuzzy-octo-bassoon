@@ -1,5 +1,5 @@
-import type { ImageParagraph, TranslationStatusResponse } from '@lingo-lens/shared';
-import type { AzureServices, ReadOperation, ReadResult, ReadStatus, TextTranslation } from '../azure/port';
+import type { ImageParagraph } from '@lingo-lens/shared';
+import type { AzureServices, ReadResult, ReadStatus, TextTranslation } from '../azure/port';
 
 /**
  * Translator text v3 `translate` request limits (Translator service limits:
@@ -14,20 +14,11 @@ export const TERMINAL_READ_STATUSES: readonly ReadStatus[] = ['succeeded', 'fail
 
 export const isReadTerminal = (status: ReadStatus) => TERMINAL_READ_STATUSES.includes(status);
 
-/**
- * Maps an analyze operation that has not succeeded to what the SPA sees.
- * Happy path only: any failed or cancelled read is a Service problem.
- * Ticket 10 replaces the failed branch with the classifier (Image errors).
- */
-export function mapReadStatus(read: ReadOperation): TranslationStatusResponse {
-  switch (read.status) {
-    case 'notStarted':
-    case 'running':
-      return { status: 'translating' };
-    default:
-      return { status: 'failed', category: 'serviceProblem' };
-  }
-}
+/** A letter or digit in any script. */
+const LETTER_OR_DIGIT = /[\p{L}\p{N}]/u;
+
+/** False when no paragraph contains a letter or digit: No text found (spec: "Error classification"). */
+export const hasText = (result: ReadResult) => result.paragraphs.some((p) => LETTER_OR_DIGIT.test(p.content));
 
 /**
  * Splits texts into consecutive batches that each stay within Translator's

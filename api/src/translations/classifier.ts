@@ -56,7 +56,7 @@ export const requestFailureInput = (error: AzureServiceError, operation: string)
 });
 
 /** A status-code matcher: exact codes, or a class such as `'5xx'`. */
-export type HttpStatusMatch = number | '5xx';
+export type HttpStatusMatch = number | '4xx' | '5xx';
 
 /** Every listed field must match; an omitted field matches anything. */
 export interface RuleMatch {
@@ -67,6 +67,8 @@ export interface RuleMatch {
   code?: readonly string[];
   /** Matches the inner code; `null` in the list matches "no inner code". */
   innerCode?: readonly (string | null)[];
+  /** Matches when either the code or the inner code is listed (Azure nests some codes, e.g. `InvalidRequest` > `InvalidContent`). */
+  anyCode?: readonly string[];
   jobStatus?: readonly string[];
   documentStatus?: readonly string[];
 }
@@ -82,10 +84,7 @@ export interface ClassifierRule {
 
 const INVALID_INPUT = ['InvalidRequest', 'InvalidArgument'] as const;
 
-/**
- * The rules. Ticket 10 appends its Document Intelligence and Translator text
- * rows here (service `documentIntelligence` / `textTranslation`), above `FALLBACKS`.
- */
+/** The rules, tried in order (first match wins), before `FALLBACKS`. */
 export const RULES: readonly ClassifierRule[] = [
   // --- Any service ---
   {
@@ -141,6 +140,42 @@ export const RULES: readonly ClassifierRule[] = [
     when: { service: ['documentTranslation'], scope: ['job'], jobStatus: ['Cancelled'] },
     category: 'serviceProblem',
   },
+
+  // --- Document Intelligence prebuilt-read (Images) ---
+  {
+    id: 'image.damaged',
+    when: { service: ['documentIntelligence'], anyCode: ['InvalidContent', 'UnsupportedContent'] },
+    category: 'cantTranslate',
+    reason: 'damaged',
+  },
+  {
+    id: 'image.badDimensions',
+    when: { service: ['documentIntelligence'], anyCode: ['InvalidContentDimensions'] },
+    category: 'cantTranslate',
+    reason: 'badDimensions',
+  },
+  {
+    // Not an Azure error: OCR succeeded but found no paragraph with a letter or digit (imagePoll.ts).
+    id: 'image.noTextFound',
+    when: { service: ['documentIntelligence'], scope: ['job'], jobStatus: ['succeeded'] },
+    category: 'noTextFound',
+  },
+
+  // --- Translator text (Images) ---
+  {
+    // Too many elements / characters in one request: our splitting is wrong.
+    id: 'translator.ourBug',
+    when: { service: ['textTranslation'], scope: ['request'], code: ['400050', '400077'] },
+    category: 'serviceProblem',
+    level: 'error',
+  },
+  {
+    // Any other 4xx (429 is `azure.busy`): our request, auth or RBAC is wrong.
+    id: 'translator.rejected',
+    when: { service: ['textTranslation'], scope: ['request'], httpStatus: ['4xx'] },
+    category: 'serviceProblem',
+    level: 'error',
+  },
 ];
 
 /** Tried after `RULES`; anything they match is logged with `mapped: false`. */
@@ -155,7 +190,10 @@ export const FALLBACKS: readonly ClassifierRule[] = [
 ];
 
 const statusMatches = (status: number | undefined, matchers: readonly HttpStatusMatch[]) =>
-  status !== undefined && matchers.some((m) => (m === '5xx' ? status >= 500 && status <= 599 : m === status));
+  status !== undefined &&
+  matchers.some((m) =>
+    m === '5xx' ? status >= 500 && status <= 599 : m === '4xx' ? status >= 400 && status <= 499 : m === status,
+  );
 
 const listMatches = <T>(value: T | undefined, list: readonly (T | null)[] | undefined) =>
   list === undefined || list.includes(value ?? null);
@@ -169,6 +207,7 @@ export function matches(rule: ClassifierRule, input: ClassifierInput): boolean {
     (w.httpStatus === undefined || statusMatches(input.httpStatus, w.httpStatus)) &&
     listMatches(input.code, w.code) &&
     listMatches(input.innerCode, w.innerCode) &&
+    (w.anyCode === undefined || [input.code, input.innerCode].some((c) => c !== undefined && w.anyCode!.includes(c))) &&
     listMatches(input.jobStatus, w.jobStatus) &&
     listMatches(input.documentStatus, w.documentStatus)
   );

@@ -57,7 +57,14 @@ export type TranslationState =
       /** Image: an object URL of the Source file, so it is shown without being downloaded back. */
       imageUrl?: string;
     }
-  | ({ phase: 'failed'; request: TranslationRequest; id?: string; guid?: string } & Failure);
+  | ({
+      phase: 'failed';
+      request: TranslationRequest;
+      id?: string;
+      guid?: string;
+      /** Image with No text found: the Image is still shown, from an object URL of the Source file. */
+      imageUrl?: string;
+    } & Failure);
 
 /** Failed polls in a row the SPA keeps polling through before showing Service problem. */
 export const TOLERATED_FAILED_POLLS = 3;
@@ -142,10 +149,11 @@ export function useDocumentTranslation({ pollIntervalMs }: { pollIntervalMs: num
       const live = () => runRef.current === run;
       let guid: string | undefined;
       let id: string | undefined;
-      const fail = (failure: Failure) => {
+      const fail = (failure: Failure, imageUrl?: string) => {
         if (id) void deleteQuietly(id);
-        if (live()) setState({ phase: 'failed', request, id, guid, ...failure });
+        if (live()) setState({ phase: 'failed', request, id, guid, ...failure, ...(imageUrl ? { imageUrl } : {}) });
       };
+      const showImage = () => (imageUrlRef.current = URL.createObjectURL(request.file));
 
       setState({ phase: 'uploading', request });
       let uploadUrl: string;
@@ -174,12 +182,15 @@ export function useDocumentTranslation({ pollIntervalMs }: { pollIntervalMs: num
           const status = await getTranslationStatus(id);
           failedPolls = 0;
           if (!live()) return;
-          if (status.status === 'failed') return fail({ category: status.category, reason: status.reason });
+          if (status.status === 'failed') {
+            // No text found keeps the Image on screen (spec: "Image result screen").
+            const imageUrl = status.category === 'noTextFound' ? showImage() : undefined;
+            return fail({ category: status.category, reason: status.reason }, imageUrl);
+          }
           if (status.status === 'ready' && status.kind === 'image') {
             // The poll that returned the result also deleted the Image and the analyze result.
             const { status: _status, kind: _kind, ...image } = status;
-            const imageUrl = (imageUrlRef.current = URL.createObjectURL(request.file));
-            setState({ phase: 'ready', request, id, guid, image, imageUrl });
+            setState({ phase: 'ready', request, id, guid, image, imageUrl: showImage() });
             return;
           }
           if (status.status === 'ready') break;
