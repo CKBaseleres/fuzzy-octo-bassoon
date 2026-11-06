@@ -185,4 +185,6 @@ export interface CounterPort {
   get(key: CounterKey): Promise<number>;
   /** Adds one and returns the new count. */
   increment(key: CounterKey): Promise<number>;
+  /** Deletes every counter row last written before `updatedBefore`; returns how many went. */
+  deleteOlderThan(updatedBefore: Date): Promise<number>;
 }

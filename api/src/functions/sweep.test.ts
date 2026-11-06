@@ -5,6 +5,7 @@ import { createTestApi } from '../testing/testApi';
 import { createSweepHandler } from './sweep';
 
 const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
 
 describe('retention sweep (timer)', () => {
   it('deletes every blob uploaded more than 60 minutes ago, in both containers, and keeps younger ones', async () => {
@@ -76,5 +77,43 @@ describe('retention sweep (timer)', () => {
     await api.runTimer(createSweepHandler);
 
     expect(api.azure.state.blobs.has(t.sourceBlobName)).toBe(false);
+  });
+
+  it('deletes quota counter rows last written more than 2 days ago and keeps newer ones', async () => {
+    const api = createTestApi({ now: '2026-03-01T12:00:00.000Z' });
+    await startDocumentTranslation(api);
+    api.clock.advance(47 * HOUR);
+    await startDocumentTranslation(api);
+    const recent = [...api.azure.state.counters.keys()].filter((key) => key.includes('2026-03-03'));
+    api.clock.advance(2 * HOUR);
+
+    await api.runTimer(createSweepHandler);
+
+    expect(recent).toHaveLength(2);
+    expect([...api.azure.state.counters.keys()].sort()).toEqual(recent.sort());
+  });
+
+  it('logs its summary and each failure with the log contract fields only', async () => {
+    const api = createTestApi();
+    const t = await startDocumentTranslation(api);
+    t.job.status = 'Running';
+    api.clock.advance(61 * MINUTE);
+    api.azure
+      .script('blobs', 'deleteBlob')
+      .rejects(new AzureServiceError({ service: 'blobs', httpStatus: 403, code: 'AuthorizationFailure' }));
+
+    await api.runTimer(createSweepHandler);
+
+    const lines = api.logs.filter((l) => String(l.args[0]).startsWith('sweep.'));
+    expect(lines).toEqual([
+      {
+        level: 'warning',
+        args: ['sweep.failed', { service: 'blobs', httpStatus: 403, errorCode: 'AuthorizationFailure' }],
+      },
+      {
+        level: 'information',
+        args: ['sweep.completed', { cancelledBatches: 1, deletedBlobs: 0, deletedCounters: 0, failures: 1 }],
+      },
+    ]);
   });
 });

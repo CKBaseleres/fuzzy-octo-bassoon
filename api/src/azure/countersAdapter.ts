@@ -1,4 +1,4 @@
-import { RestError, TableClient } from '@azure/data-tables';
+import { odata, RestError, TableClient } from '@azure/data-tables';
 import type { TokenCredential } from '@azure/identity';
 import { AzureServiceError, type CounterKey, type CounterPort } from './port';
 
@@ -68,6 +68,28 @@ export function createCountersAdapter(config: {
           if (!conflict || attempt >= MAX_ATTEMPTS) return toAzureError(error);
         }
       }
+    },
+
+    /** Uses the Table's own `Timestamp` (last write). A row deleted meanwhile (404) is not an error. */
+    async deleteOlderThan(updatedBefore) {
+      let deleted = 0;
+      try {
+        const rows = table.listEntities({
+          queryOptions: { filter: odata`Timestamp lt ${updatedBefore}`, select: ['PartitionKey', 'RowKey'] },
+        });
+        for await (const { partitionKey, rowKey } of rows) {
+          if (partitionKey === undefined || rowKey === undefined) continue;
+          try {
+            await table.deleteEntity(partitionKey, rowKey);
+            deleted++;
+          } catch (error) {
+            if (statusOf(error) !== 404) throw error;
+          }
+        }
+      } catch (error) {
+        return toAzureError(error);
+      }
+      return deleted;
     },
   };
 }

@@ -1,5 +1,6 @@
 import type { InvocationContext } from '@azure/functions';
 import type { FailureCategory, FailureReason } from '@lingo-lens/shared';
+import { AzureServiceError } from '../azure/port';
 import type { Classification, ClassifierInput } from './classifier';
 
 /**
@@ -40,6 +41,33 @@ export interface TranslationErrorLogFields extends TranslationLogFields {
 
 export function logEvent(context: InvocationContext, event: string, fields: TranslationLogFields): void {
   context.log(event, fields);
+}
+
+/** The retention sweep's summary (`sweep.completed`): counts only, no names. */
+export interface SweepSummaryLogFields {
+  cancelledBatches: number;
+  deletedBlobs: number;
+  deletedCounters: number;
+  failures: number;
+}
+
+/** One step of the sweep that failed (`sweep.failed`): Azure's error, no blob names. */
+export interface SweepFailureLogFields {
+  service?: string;
+  httpStatus?: number;
+  errorCode?: string;
+}
+
+export function logSweepCompleted(context: InvocationContext, fields: SweepSummaryLogFields): void {
+  context.log('sweep.completed', fields);
+}
+
+export function logSweepFailed(context: InvocationContext, error: unknown): void {
+  const fields: SweepFailureLogFields =
+    error instanceof AzureServiceError
+      ? { service: error.service, httpStatus: error.httpStatus, ...(error.code ? { errorCode: error.code } : {}) }
+      : { errorCode: 'unknown' };
+  context.warn('sweep.failed', fields);
 }
 
 const MAX_MESSAGE_LENGTH = 300;

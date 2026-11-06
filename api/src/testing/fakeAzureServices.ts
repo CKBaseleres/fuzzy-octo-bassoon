@@ -13,6 +13,12 @@ export interface FakeBatchJob extends BatchStatus {
   createdOn: Date;
 }
 
+/** A quota counter row; `updatedOn` plays the Table's `Timestamp`. */
+export interface FakeCounter {
+  count: number;
+  updatedOn: Date;
+}
+
 export interface FakeReadOperation extends ReadOperation {
   sourceUrl: string;
   /** Set once `deleteReadResult` has been called for it. */
@@ -26,7 +32,7 @@ export interface FakeReadOperation extends ReadOperation {
 export interface FakeAzureState {
   blobs: Map<string, BlobInfo>;
   /** Keyed by `${partitionKey}|${rowKey}`. */
-  counters: Map<string, number>;
+  counters: Map<string, FakeCounter>;
   batchJobs: Map<string, FakeBatchJob>;
   readOperations: Map<string, FakeReadOperation>;
   /** Simulates the browser uploading a Source file straight to Blob Storage. */
@@ -130,7 +136,7 @@ export function createFakeAzureServices({ clock }: { clock: Clock }): FakeAzureS
 
 function createInMemoryServices(clock: Clock): { state: FakeAzureState; ports: AzureServices } {
   const blobs = new Map<string, BlobInfo>();
-  const counters = new Map<string, number>();
+  const counters = new Map<string, FakeCounter>();
   const batchJobs = new Map<string, FakeBatchJob>();
   const readOperations = new Map<string, FakeReadOperation>();
   let nextId = 1;
@@ -217,12 +223,19 @@ function createInMemoryServices(clock: Clock): { state: FakeAzureState; ports: A
     },
 
     counters: {
-      get: ({ partitionKey, rowKey }) => Promise.resolve(counters.get(`${partitionKey}|${rowKey}`) ?? 0),
+      get: ({ partitionKey, rowKey }) => Promise.resolve(counters.get(`${partitionKey}|${rowKey}`)?.count ?? 0),
       increment: ({ partitionKey, rowKey }) => {
         const key = `${partitionKey}|${rowKey}`;
-        const next = (counters.get(key) ?? 0) + 1;
-        counters.set(key, next);
+        const next = (counters.get(key)?.count ?? 0) + 1;
+        counters.set(key, { count: next, updatedOn: clock.now() });
         return Promise.resolve(next);
+      },
+      deleteOlderThan: (updatedBefore) => {
+        let deleted = 0;
+        for (const [key, counter] of counters) {
+          if (counter.updatedOn < updatedBefore && counters.delete(key)) deleted++;
+        }
+        return Promise.resolve(deleted);
       },
     },
   };
