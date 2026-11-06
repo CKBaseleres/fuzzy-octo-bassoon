@@ -1,11 +1,11 @@
 // Composition root: the only place production dependencies are created and
 // Functions are registered with the host. Handlers never import from here.
-import { app } from '@azure/functions';
+import { app, type HttpFunctionOptions } from '@azure/functions';
 import { DefaultAzureCredential } from '@azure/identity';
 import { createAzureServices } from './azure/azureServices';
 import { withinRequestBudget, withRetries } from './azure/retries';
 import { systemClock } from './clock';
-import { apiHeadersHook } from './guardrails/apiHeaders';
+import { guardHttpHandler } from './guardrails/apiHeaders';
 import { DEFAULT_TIMEOUTS, type Deps } from './deps';
 import { createUploadHandler } from './functions/createUpload';
 import { createDeleteTranslationHandler } from './functions/deleteTranslation';
@@ -68,52 +68,56 @@ app.hook.preInvocation((hook) => {
     withinRequestBudget(systemClock, () => handler(trigger, context) as unknown);
 });
 
-// X-Robots-Tag: noindex on every /api response (SWA globalHeaders skip the API).
-app.hook.postInvocation(apiHeadersHook);
+/**
+ * Registers an HTTP Function behind `guardHttpHandler`: X-Robots-Tag: noindex on
+ * every /api response (SWA globalHeaders skip the API), and a safe 500 for any throw.
+ */
+const http = (name: string, options: HttpFunctionOptions) =>
+  app.http(name, { ...options, handler: guardHttpHandler(options.handler) });
 
-app.http('health', {
+http('health', {
   route: 'health',
   methods: ['GET'],
   authLevel: 'anonymous',
   handler: createHealthHandler(deps),
 });
 
-app.http('languages', {
+http('languages', {
   route: 'languages',
   methods: ['GET'],
   authLevel: 'anonymous',
   handler: createGetLanguagesHandler(deps),
 });
 
-app.http('createUpload', {
+http('createUpload', {
   route: 'translations/uploads',
   methods: ['POST'],
   authLevel: 'anonymous',
   handler: createUploadHandler(deps),
 });
 
-app.http('startTranslation', {
+http('startTranslation', {
   route: 'translations',
   methods: ['POST'],
   authLevel: 'anonymous',
   handler: createStartTranslationHandler(deps),
 });
 
-app.http('getTranslation', {
+http('getTranslation', {
   route: 'translations/{id}',
   methods: ['GET'],
   authLevel: 'anonymous',
   handler: createGetTranslationHandler(deps),
 });
 
-app.http('deleteTranslation', {
+http('deleteTranslation', {
   route: 'translations/{id}',
   methods: ['DELETE'],
   authLevel: 'anonymous',
   handler: createDeleteTranslationHandler(deps),
 });
 
-app.http('getTranslatedFile', {
+http('getTranslatedFile', {
   route: 'translations/{id}/file',
   methods: ['GET'],
   authLevel: 'anonymous',

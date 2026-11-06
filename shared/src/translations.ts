@@ -170,8 +170,11 @@ export interface TranslatedFileResponse {
 
 // --- Errors ----------------------------------------------------------------------
 
-/** Body of any 4xx the API returns. `expired` comes with 410 from `GET /api/translations/{id}/file`. */
+/**
+ * Body of any 4xx the API returns, and of an unexpected 500 (`internal`, no details).
+ * `expired` comes with 410 from `GET /api/translations/{id}/file`.
+ */
 export interface ApiErrorResponse {
-  error: 'badRequest' | 'notFound' | 'expired';
+  error: 'badRequest' | 'notFound' | 'expired' | 'internal';
   message?: string;
 }

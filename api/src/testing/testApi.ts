@@ -1,7 +1,7 @@
 import { HttpRequest, HttpResponse, InvocationContext, type LogLevel } from '@azure/functions';
 import { withinRequestBudget, withRetries } from '../azure/retries';
 import { DEFAULT_TIMEOUTS, type Deps, type HttpHandlerFactory, type TimerHandlerFactory } from '../deps';
-import { withApiHeaders } from '../guardrails/apiHeaders';
+import { guardHttpHandler } from '../guardrails/apiHeaders';
 import type { Limits } from '../guardrails/limits';
 import { createFakeAzureServices, type FakeAzureServices } from './fakeAzureServices';
 import { createFakeClock, type FakeClock } from './fakeClock';
@@ -78,7 +78,7 @@ export function createTestApi(
     clock,
     deps,
     async call(factory, request) {
-      const handler = factory(deps);
+      const handler = guardHttpHandler(factory(deps));
       const httpRequest = new HttpRequest({
         method: request.method,
         url: `http://localhost${request.path}`,
@@ -86,11 +86,10 @@ export function createTestApi(
         params: request.params,
         body: request.body === undefined ? undefined : { string: JSON.stringify(request.body) },
       });
-      // Mirrors the host: index.ts gives each request a retry budget (preInvocation)
-      // and adds these headers to every HTTP result (postInvocation).
+      // Mirrors index.ts: each request gets a retry budget (preInvocation) and
+      // runs inside guardHttpHandler (API headers, safe 500).
       const result = await withinRequestBudget(clock, () => handler(httpRequest, context()));
-      const withHeaders = withApiHeaders(result ?? {});
-      const response = withHeaders instanceof HttpResponse ? withHeaders : new HttpResponse(withHeaders);
+      const response = result instanceof HttpResponse ? result : new HttpResponse(result ?? {});
       const text = await response.text();
       return {
         status: response.status,

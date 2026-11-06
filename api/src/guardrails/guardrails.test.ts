@@ -1,4 +1,4 @@
-import type { CreateUploadResponse, RefusedResponse, TooLargeResponse } from '@lingo-lens/shared';
+import type { ApiErrorResponse, CreateUploadResponse, RefusedResponse, TooLargeResponse } from '@lingo-lens/shared';
 import { describe, expect, it } from 'vitest';
 import { createUploadHandler } from '../functions/createUpload';
 import { createHealthHandler } from '../functions/health';
@@ -205,6 +205,19 @@ describe('search engines', () => {
 
     expect(responses.map((r) => r.status)).toEqual([200, 400, 429]);
     for (const response of responses) expect(response.headers.get('x-robots-tag')).toBe('noindex');
+  });
+
+  it('answers an unexpected error with a safe 500 that is still noindex', async () => {
+    const api = createTestApi();
+    api.azure.script('counters', 'get').rejects(new Error('boom at https://secret.example/path?sig=abc'));
+
+    const response = await api.call(createUploadHandler, requestUpload());
+
+    expect(response.status).toBe(500);
+    expect(response.headers.get('x-robots-tag')).toBe('noindex');
+    expect(response.json<ApiErrorResponse>()).toEqual({ error: 'internal' });
+    expect(JSON.stringify(api.logs)).not.toContain('secret.example');
+    expect(api.logs.find((l) => l.args[0] === 'request.failed')?.level).toBe('error');
   });
 });
 
