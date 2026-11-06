@@ -114,7 +114,14 @@ export interface StartTranslationResponse {
 /** Failure categories 2-7 of the spec (category 1 never reaches the API). */
 export type FailureCategory = 'uploadFailed' | 'refused' | 'cantTranslate' | 'noTextFound' | 'serviceProblem' | 'expired';
 
-export type FailureReason = 'passwordProtected' | 'damaged' | 'badDimensions';
+/** Why a Can't translate failure happened, when Azure said so. */
+export type CantTranslateReason = 'passwordProtected' | 'damaged' | 'badDimensions';
+
+/**
+ * The optional detail on a failure: a Can't translate reason, or `busy` on a
+ * Service problem caused by Azure throttling (429 after retries). No internals.
+ */
+export type FailureReason = CantTranslateReason | 'busy';
 
 /** One paragraph of an Image, as `prebuilt-read` found it, with its translation. */
 export interface ImageParagraph {

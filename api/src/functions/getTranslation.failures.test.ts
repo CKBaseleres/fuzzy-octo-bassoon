@@ -56,16 +56,24 @@ describe('GET /api/translations/{id}: classifying a failed Document', () => {
       mapped: false,
       level: 'error',
     },
-    ...(['ServiceUnavailable', 'InternalServerError', 'RequestRateTooHigh'] as const).map(
+    ...(['ServiceUnavailable', 'InternalServerError'] as const).map(
       (code): Case => ({
         name: `document Failed with ${code}`,
         job: { status: 'Failed', document: { status: 'Failed', error: { code } } },
         expected: { status: 'failed', category: 'serviceProblem' },
-        ruleId: 'batch.document.serviceBusy',
+        ruleId: 'batch.document.serviceError',
         mapped: true,
         level: 'warning',
       }),
     ),
+    {
+      name: 'document Failed with RequestRateTooHigh (Azure throttled: busy)',
+      job: { status: 'Failed', document: { status: 'Failed', error: { code: 'RequestRateTooHigh' } } },
+      expected: { status: 'failed', category: 'serviceProblem', reason: 'busy' },
+      ruleId: 'batch.document.throttled',
+      mapped: true,
+      level: 'warning',
+    },
     ...(['Unauthorized', 'ResourceNotFound'] as const).map(
       (code): Case => ({
         name: `document Failed with ${code} (our fault: error level)`,
@@ -247,10 +255,21 @@ describe('GET /api/translations/{id}: retrying Azure hiccups', () => {
     expect(response.json<TranslationStatusResponse>()).toEqual({ status: 'failed', category: 'serviceProblem' });
     expect(failureLog(api)).toMatchObject({
       level: 'warning',
-      fields: { ruleId: 'azure.busy', mapped: true, httpStatus: 503, operation: 'getBatchStatus' },
+      fields: { ruleId: 'azure.unavailable', mapped: true, httpStatus: 503, operation: 'getBatchStatus' },
     });
     const gaps = attemptsAt.slice(1).map((at, i) => at - attemptsAt[i]!);
     expect(gaps).toEqual([1000, 2000, 4000]);
+  });
+
+  it('reports Service problem with reason busy when Azure still throttles (429) after 3 retries', async () => {
+    const api = createTestApi();
+    const t = await startDocumentTranslation(api);
+    api.azure.script('documentTranslation', 'getBatchStatus').rejects(busy(429));
+
+    const response = await poll(api, t.id);
+
+    expect(response.json<TranslationStatusResponse>()).toEqual({ status: 'failed', category: 'serviceProblem', reason: 'busy' });
+    expect(failureLog(api)).toMatchObject({ level: 'warning', fields: { ruleId: 'azure.busy', reason: 'busy', httpStatus: 429 } });
   });
 
   it('does not retry a 4xx other than 429', async () => {

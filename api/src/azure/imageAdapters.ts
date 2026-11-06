@@ -1,19 +1,23 @@
 import type { TokenCredential } from '@azure/identity';
 import type { AzureServiceName, DocumentIntelligencePort, ReadParagraph, ReadStatus, TextTranslationPort } from './port';
 import { endpointUrl } from './endpoint';
-import { failure, toErrorBody, type RawError } from './translatorAdapter';
+import { failure, send, toErrorBody, type RawError } from './translatorAdapter';
 
 /** Document Intelligence v4.0 GA (spec: "Translation pipelines"). */
 export const DOCUMENT_INTELLIGENCE_API_VERSION = '2024-11-30';
 const READ_MODEL = 'prebuilt-read';
 const COGNITIVE_SERVICES_SCOPE = 'https://cognitiveservices.azure.com/.default';
 
-/** `fetch` with a managed-identity bearer token; a non-2xx answer becomes an `AzureServiceError`. */
+/**
+ * `fetch` with a managed-identity bearer token. A non-2xx answer, or no answer at
+ * all (status 0, `NetworkError`), becomes an `AzureServiceError`, so it is retried
+ * and classified like any other Azure failure.
+ */
 function bearerFetch(service: AzureServiceName, credential: TokenCredential) {
   return async (method: string, target: URL, body?: unknown): Promise<Response> => {
     const token = await credential.getToken(COGNITIVE_SERVICES_SCOPE);
     if (!token) throw new Error('No token for Cognitive Services');
-    const response = await fetch(target, {
+    const response = await send(service, target, {
       method,
       headers: {
         authorization: `Bearer ${token.token}`,

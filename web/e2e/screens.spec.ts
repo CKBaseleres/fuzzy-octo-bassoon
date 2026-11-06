@@ -211,7 +211,12 @@ const POLLED_FAILURES: { name: string; failure: FailedTranslationResponse; text:
     failure: { status: 'failed', category: 'cantTranslate', reason: 'badDimensions' },
     text: BAD_DIMENSIONS_MESSAGE,
   },
-  { name: 'Service problem', failure: { status: 'failed', category: 'serviceProblem' }, text: 'Lingo Lens is busy' },
+  { name: 'Service problem', failure: { status: 'failed', category: 'serviceProblem' }, text: 'Something went wrong on our side' },
+  {
+    name: 'Service problem (Azure busy)',
+    failure: { status: 'failed', category: 'serviceProblem', reason: 'busy' },
+    text: 'Lingo Lens is busy',
+  },
 ];
 
 for (const { name, failure, text } of POLLED_FAILURES) {

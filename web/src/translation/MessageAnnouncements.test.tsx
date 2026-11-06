@@ -34,7 +34,7 @@ describe('Message bars: names and focus', () => {
 
     await translate();
 
-    const bar = await screen.findByRole('group', { name: /Lingo Lens is busy, try again in a minute\./ });
+    const bar = await screen.findByRole('group', { name: /Something went wrong on our side\. Try again\./ });
     await waitFor(() => expect(bar).toHaveFocus());
   });
 
