@@ -24,9 +24,9 @@ export const createGetTranslatedFileHandler: HttpHandlerFactory =
     if (!ref || ref.kind !== 'document' || !isDocumentExtension(ref.extension)) return notFound();
 
     const extension = translatedExtension(ref.extension);
-    const target = targetBlobName(ref.guid, extension);
+    const target = targetBlobName(ref.translationGuid, extension);
     if (!(await azure.blobs.getBlob(target))) {
-      if (await blobsGone(azure.blobs, ref.guid)) return { status: 410, jsonBody: { error: 'expired' } satisfies ApiErrorResponse };
+      if (await blobsGone(azure.blobs, ref.translationGuid)) return { status: 410, jsonBody: { error: 'expired' } satisfies ApiErrorResponse };
       return notFound();
     }
 

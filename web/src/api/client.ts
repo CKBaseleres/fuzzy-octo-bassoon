@@ -1,9 +1,9 @@
 import type {
-  CreateUploadRequest,
+  CreateUploadBody,
   CreateUploadResponse,
   HealthResponse,
   LanguagesResponse,
-  StartTranslationRequest,
+  StartTranslationBody,
   StartTranslationResponse,
   TranslatedFileResponse,
   TranslationStatusResponse,
@@ -45,10 +45,10 @@ export const getHealth = () => getJson<HealthResponse>('/api/health');
 
 export const getLanguages = () => getJson<LanguagesResponse>('/api/languages');
 
-export const createUpload = (body: CreateUploadRequest) =>
+export const createUpload = (body: CreateUploadBody) =>
   postJson<CreateUploadResponse>('/api/translations/uploads', body);
 
-export const startTranslation = (body: StartTranslationRequest) =>
+export const startTranslation = (body: StartTranslationBody) =>
   postJson<StartTranslationResponse>('/api/translations', body);
 
 const translationPath = (id: string) => `/api/translations/${encodeURIComponent(id)}`;

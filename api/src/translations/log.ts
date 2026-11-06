@@ -1,5 +1,6 @@
 import type { InvocationContext } from '@azure/functions';
 import type { FailureCategory, FailureReason } from '@lingo-lens/shared';
+import { AzureServiceError } from '../azure/port';
 import type { Classification, ClassifierInput } from './classifier';
 
 /**
@@ -34,7 +35,7 @@ export interface TranslationErrorLogFields extends TranslationLogFields {
   documentStatus?: string;
   /** Azure's `apim-request-id` / `X-RequestId`. */
   requestId?: string;
-  /** Azure's message, SAS parameters scrubbed, at most 300 characters. */
+  /** Azure's message, URLs and SAS parameters redacted, at most 300 characters. */
   message?: string;
 }
 
@@ -42,15 +43,48 @@ export function logEvent(context: InvocationContext, event: string, fields: Tran
   context.log(event, fields);
 }
 
+/** The retention sweep's summary (`sweep.completed`): counts only, no names. */
+export interface SweepSummaryLogFields {
+  cancelledBatches: number;
+  deletedBlobs: number;
+  deletedCounters: number;
+  failures: number;
+}
+
+/** One step of the sweep that failed (`sweep.failed`): Azure's error, no blob names. */
+export interface SweepFailureLogFields {
+  service?: string;
+  httpStatus?: number;
+  errorCode?: string;
+}
+
+export function logSweepCompleted(context: InvocationContext, fields: SweepSummaryLogFields): void {
+  context.log('sweep.completed', fields);
+}
+
+export function logSweepFailed(context: InvocationContext, error: unknown): void {
+  const fields: SweepFailureLogFields =
+    error instanceof AzureServiceError
+      ? { service: error.service, httpStatus: error.httpStatus, ...(error.code ? { errorCode: error.code } : {}) }
+      : { errorCode: 'unknown' };
+  context.warn('sweep.failed', fields);
+}
+
 const MAX_MESSAGE_LENGTH = 300;
 /** SAS query parameters, wherever they appear. */
 const SAS_PARAMETER =
   /\b(sig|se|st|sp|sv|sr|spr|skoid|sktid|skt|ske|sks|skv|sdd|ss|srt|sip|saoid|suoid|scid)=[^&\s"']*/gi;
 
-/** Removes SAS parameter values (so any signature) and truncates to 300 characters. */
+/** Any https URL, up to whitespace, a quote or a closing bracket. */
+const HTTPS_URL = /https:\/\/[^\s"'<>()[\]{}]+/gi;
+
+/**
+ * Replaces every https URL (blob names, SAS, endpoints) with `REDACTED_URL`,
+ * removes any SAS parameter values left outside a URL, and truncates to 300 characters.
+ */
 export function scrubMessage(message: string | undefined): string | undefined {
   if (!message) return undefined;
-  return message.replace(SAS_PARAMETER, '$1=REDACTED').slice(0, MAX_MESSAGE_LENGTH);
+  return message.replace(HTTPS_URL, 'REDACTED_URL').replace(SAS_PARAMETER, '$1=REDACTED').slice(0, MAX_MESSAGE_LENGTH);
 }
 
 /** Logs a failed Translation as `translation.failed`, at the level the classifier chose. */

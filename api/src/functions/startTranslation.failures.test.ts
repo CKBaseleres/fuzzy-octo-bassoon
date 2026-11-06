@@ -11,7 +11,7 @@ const start = (api: TestApi) =>
   api.call(createStartTranslationHandler, {
     method: 'POST',
     path: '/api/translations',
-    body: { uploadId: UPLOAD_ID, extension: 'pdf', targetLanguage: 'fr' },
+    body: { translationGuid: UPLOAD_ID, extension: 'pdf', targetLanguage: 'fr' },
   });
 
 const failureLog = (api: TestApi) => {
@@ -77,6 +77,21 @@ describe('POST /api/translations: when Azure refuses the batch submit', () => {
 
     expect(response.status).toBe(502);
     expect(response.json<FailedTranslationResponse>()).toEqual({ status: 'failed', category: 'serviceProblem' });
-    expect(failureLog(api)).toMatchObject({ level: 'warning', fields: { ruleId: 'azure.busy', httpStatus: 503 } });
+    expect(failureLog(api)).toMatchObject({ level: 'warning', fields: { ruleId: 'azure.unavailable', httpStatus: 503 } });
+  });
+
+  it('answers 502 with Service problem, reason busy, when the submit is still throttled after 3 retries', async () => {
+    const api = createTestApi();
+    api.azure.state.putBlob(SOURCE, 1000);
+    api.azure
+      .script('documentTranslation', 'startBatch')
+      .rejects(new AzureServiceError({ service: 'documentTranslation', httpStatus: 429 }));
+
+    const response = await start(api);
+
+    expect(response.status).toBe(502);
+    expect(response.json<FailedTranslationResponse>()).toEqual({ status: 'failed', category: 'serviceProblem', reason: 'busy' });
+    expect(failureLog(api)).toMatchObject({ level: 'warning', fields: { ruleId: 'azure.busy', httpStatus: 429 } });
+    expect(api.azure.state.blobs.has(SOURCE)).toBe(false);
   });
 });

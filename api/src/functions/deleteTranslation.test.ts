@@ -19,8 +19,8 @@ describe('DELETE /api/translations/{id}', () => {
 
     expect(response.status).toBe(204);
     const names = [...api.azure.state.blobs.keys()];
-    expect(names.filter((n) => n.includes(mine.guid))).toEqual([]);
-    expect(names.filter((n) => n.includes(other.guid))).toHaveLength(2);
+    expect(names.filter((n) => n.includes(mine.translationGuid))).toEqual([]);
+    expect(names.filter((n) => n.includes(other.translationGuid))).toHaveLength(2);
   });
 
   it('cancels a job that is still running', async () => {
@@ -31,7 +31,7 @@ describe('DELETE /api/translations/{id}', () => {
     await remove(api, t.id);
 
     expect(t.job.status).toBe('Cancelled');
-    expect([...api.azure.state.blobs.keys()].filter((n) => n.includes(t.guid))).toEqual([]);
+    expect([...api.azure.state.blobs.keys()].filter((n) => n.includes(t.translationGuid))).toEqual([]);
   });
 
   it('leaves a finished job as it is', async () => {
@@ -54,7 +54,7 @@ describe('DELETE /api/translations/{id}', () => {
     const response = await remove(api, t.id);
 
     expect(response.status).toBe(204);
-    expect([...api.azure.state.blobs.keys()].filter((n) => n.includes(t.guid))).toEqual([]);
+    expect([...api.azure.state.blobs.keys()].filter((n) => n.includes(t.translationGuid))).toEqual([]);
   });
 
   it('is safe to repeat', async () => {

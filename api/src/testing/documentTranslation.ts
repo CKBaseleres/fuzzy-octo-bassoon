@@ -8,7 +8,7 @@ export interface StartedDocumentTranslation {
   /** The opaque Translation id the SPA holds. */
   id: string;
   /** Our GUID (the upload id). */
-  guid: string;
+  translationGuid: string;
   sourceBlobName: string;
   targetBlobName: string;
   /** The fake batch job; set `job.status` (and `job.document`) to move it on. */
@@ -30,13 +30,13 @@ export async function startDocumentTranslation(
     path: '/api/translations/uploads',
     body: { extension },
   });
-  const { uploadId, uploadUrl } = upload.json<CreateUploadResponse>();
+  const { translationGuid, uploadUrl } = upload.json<CreateUploadResponse>();
   api.azure.state.putBlob(new URL(uploadUrl).pathname.slice(1), sizeInBytes);
 
   const started = await api.call(createStartTranslationHandler, {
     method: 'POST',
     path: '/api/translations',
-    body: { uploadId, extension, targetLanguage },
+    body: { translationGuid, extension, targetLanguage },
   });
   if (started.status !== 202) throw new Error(`start responded ${started.status}`);
   const { id } = started.json<StartTranslationResponse>();
@@ -44,7 +44,7 @@ export async function startDocumentTranslation(
 
   return {
     id,
-    guid: uploadId,
+    translationGuid,
     sourceBlobName: job.request.sourceBlobName,
     targetBlobName: job.request.targetBlobName,
     job,

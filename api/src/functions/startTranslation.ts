@@ -51,10 +51,10 @@ export const createStartTranslationHandler: HttpHandlerFactory =
     };
 
     const body = await readJsonObject(request);
-    const uploadId = body?.uploadId;
+    const translationGuid = body?.translationGuid;
     const extension = normaliseExtension(body?.extension);
     const targetLanguage = body?.targetLanguage;
-    if (typeof uploadId !== 'string' || !GUID_PATTERN.test(uploadId)) return badRequest('Invalid uploadId');
+    if (typeof translationGuid !== 'string' || !GUID_PATTERN.test(translationGuid)) return badRequest('Invalid translationGuid');
     if (typeof targetLanguage !== 'string' || !LANGUAGE_CODE.test(targetLanguage)) {
       return badRequest('Invalid targetLanguage');
     }
@@ -62,7 +62,7 @@ export const createStartTranslationHandler: HttpHandlerFactory =
       return badRequest('Unsupported file extension');
     }
 
-    const source = sourceBlobName(uploadId, extension);
+    const source = sourceBlobName(translationGuid, extension);
     const blob = await azure.blobs.getBlob(source);
     if (!blob) return badRequest('Source file not uploaded');
 
@@ -70,13 +70,13 @@ export const createStartTranslationHandler: HttpHandlerFactory =
     if (refusal) return refusal;
 
     const startedAt = clock.now();
-    const logStarted = () =>
-      logEvent(context, 'translation.started', {
-        translationGuid: uploadId,
-        format: extension,
-        sizeInBytes: blob.sizeInBytes,
-        targetLanguage,
-      });
+    const logBase: TranslationLogFields = {
+      translationGuid,
+      format: extension,
+      sizeInBytes: blob.sizeInBytes,
+      targetLanguage,
+    };
+    const logStarted = () => logEvent(context, 'translation.started', logBase);
 
     if (isImageExtension(extension)) {
       // Document Intelligence reads the Image itself, through a short-lived read-only SAS.
@@ -86,15 +86,10 @@ export const createStartTranslationHandler: HttpHandlerFactory =
         ({ operationId } = await azure.documentIntelligence.startRead({ sourceUrl }));
       } catch (error) {
         if (!(error instanceof AzureServiceError)) throw error;
-        return submitFailed(error, 'startRead', source, {
-          translationGuid: uploadId,
-          format: extension,
-          sizeInBytes: blob.sizeInBytes,
-          targetLanguage,
-        });
+        return submitFailed(error, 'startRead', source, logBase);
       }
       logStarted();
-      const id = encodeTranslationId({ kind: 'image', guid: uploadId, extension, operationId, startedAt, targetLanguage });
+      const id = encodeTranslationId({ kind: 'image', translationGuid, extension, operationId, startedAt, targetLanguage });
       const response: StartTranslationResponse = { id };
       return { status: 202, jsonBody: response };
     }
@@ -103,21 +98,16 @@ export const createStartTranslationHandler: HttpHandlerFactory =
     try {
       ({ operationId } = await azure.documentTranslation.startBatch({
         sourceBlobName: source,
-        targetBlobName: targetBlobName(uploadId, translatedExtension(extension)),
+        targetBlobName: targetBlobName(translationGuid, translatedExtension(extension)),
         targetLanguage,
       }));
     } catch (error) {
       if (!(error instanceof AzureServiceError)) throw error;
-      return submitFailed(error, 'startBatch', source, {
-        translationGuid: uploadId,
-        format: extension,
-        sizeInBytes: blob.sizeInBytes,
-        targetLanguage,
-      });
+      return submitFailed(error, 'startBatch', source, logBase);
     }
 
     logStarted();
-    const id = encodeTranslationId({ kind: 'document', guid: uploadId, extension, operationId, startedAt });
+    const id = encodeTranslationId({ kind: 'document', translationGuid, extension, operationId, startedAt });
     const response: StartTranslationResponse = { id };
     return { status: 202, jsonBody: response };
   };

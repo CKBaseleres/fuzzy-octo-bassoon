@@ -1,4 +1,5 @@
 import type { TokenCredential } from '@azure/identity';
+import { endpointUrl } from './endpoint';
 import {
   AzureServiceError,
   type AzureErrorBody,
@@ -39,7 +40,8 @@ export function toErrorBody(raw: RawError | undefined): AzureErrorBody | undefin
 export const requestIdOf = (response: Response) =>
   response.headers.get('apim-request-id') ?? response.headers.get('x-requestid') ?? undefined;
 
-export async function failure(service: AzureServiceName, response: Response): Promise<AzureServiceError> {  let raw: RawError | undefined;
+export async function failure(service: AzureServiceName, response: Response): Promise<AzureServiceError> {
+  let raw: RawError | undefined;
   try {
     raw = ((await response.json()) as { error?: RawError }).error;
   } catch {
@@ -54,7 +56,7 @@ export async function failure(service: AzureServiceName, response: Response): Pr
 }
 
 /** No response at all (DNS, connection reset...): status 0, which the retry wrapper retries. */
-async function send(service: AzureServiceName, target: URL | string, init: RequestInit): Promise<Response> {
+export async function send(service: AzureServiceName, target: URL | string, init: RequestInit): Promise<Response> {
   try {
     return await fetch(target, init);
   } catch (error) {
@@ -77,10 +79,11 @@ export function createDocumentTranslationAdapter(options: {
   blobEndpoint: string;
   credential: TokenCredential;
 }): DocumentTranslationPort {
-  const base = new URL('translator/document/', options.translatorEndpoint);
-  const blobUrl = (blobName: string) => new URL(blobName, options.blobEndpoint).toString();
+  // Built per call, so a missing setting fails the request, not the module load.
+  const blobUrl = (blobName: string) =>
+    new URL(blobName, endpointUrl('STORAGE_BLOB_ENDPOINT', options.blobEndpoint)).toString();
   const url = (path: string) => {
-    const u = new URL(path, base);
+    const u = new URL(`translator/document/${path}`, endpointUrl('TRANSLATOR_ENDPOINT', options.translatorEndpoint));
     u.searchParams.set('api-version', DOCUMENT_TRANSLATION_API_VERSION);
     return u;
   };

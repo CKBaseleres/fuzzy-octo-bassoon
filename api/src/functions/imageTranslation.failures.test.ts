@@ -82,14 +82,14 @@ describe('Image Translation: Document Intelligence could not read the Image', ()
         }),
       );
     const upload = await api.call(createUploadHandler, { method: 'POST', path: '/api/translations/uploads', body: { extension: 'png' } });
-    const { uploadId, uploadUrl } = upload.json<{ uploadId: string; uploadUrl: string }>();
+    const { translationGuid, uploadUrl } = upload.json<{ translationGuid: string; uploadUrl: string }>();
     const blobName = new URL(uploadUrl).pathname.slice(1);
     api.azure.state.putBlob(blobName, 300_000);
 
     const response = await api.call(createStartTranslationHandler, {
       method: 'POST',
       path: '/api/translations',
-      body: { uploadId, extension: 'png', targetLanguage: 'fr' },
+      body: { translationGuid, extension: 'png', targetLanguage: 'fr' },
     });
 
     expect(response.status).toBe(502);
@@ -112,7 +112,7 @@ describe('Image Translation: Document Intelligence could not read the Image', ()
     const response = await poll(api, t.id);
 
     expect(response.json<TranslationStatusResponse>()).toEqual({ status: 'failed', category: 'serviceProblem' });
-    expect(failureLog(api)?.fields).toMatchObject({ ruleId: 'azure.busy', operation: 'getReadResult' });
+    expect(failureLog(api)?.fields).toMatchObject({ ruleId: 'azure.unavailable', operation: 'getReadResult' });
     expectCleanedUp(api, t);
   });
 });
@@ -210,7 +210,43 @@ describe('Image Translation: Translator failures fail the whole Image', () => {
 
     expect(calls).toBe(5); // 1 good call, then 1 attempt + 3 retries
     expect(response.json<TranslationStatusResponse>()).toEqual({ status: 'failed', category: 'serviceProblem' });
-    expect(failureLog(api)?.fields).toMatchObject({ ruleId: 'azure.busy', operation: 'translate' });
+    expect(failureLog(api)?.fields).toMatchObject({ ruleId: 'azure.unavailable', operation: 'translate' });
+    expectCleanedUp(api, t);
+  });
+
+  it('Translator unreachable (network error, no response) is retried, then Service problem with everything deleted', async () => {
+    const api = createTestApi();
+    const t = await startImageTranslation(api);
+    let calls = 0;
+    api.azure.script('textTranslation', 'translate').handles(() => {
+      calls++;
+      return Promise.reject(new AzureServiceError({ service: 'textTranslation', httpStatus: 0, code: 'NetworkError' }));
+    });
+    t.succeed(SIGN);
+
+    const response = await poll(api, t.id);
+
+    expect(calls).toBe(4); // 1 attempt + 3 retries
+    expect(response.status).toBe(200);
+    expect(response.json<TranslationStatusResponse>()).toEqual({ status: 'failed', category: 'serviceProblem' });
+    expect(failureLog(api)).toMatchObject({
+      level: 'warning',
+      fields: { ruleId: 'azure.unreachable', mapped: true, operation: 'translate' },
+    });
+    expectCleanedUp(api, t);
+  });
+
+  it('Document Intelligence throttling (429) after retries is Service problem with reason busy', async () => {
+    const api = createTestApi();
+    const t = await startImageTranslation(api);
+    api.azure
+      .script('documentIntelligence', 'getReadResult')
+      .rejects(new AzureServiceError({ service: 'documentIntelligence', httpStatus: 429, code: '429' }));
+
+    const response = await poll(api, t.id);
+
+    expect(response.json<TranslationStatusResponse>()).toEqual({ status: 'failed', category: 'serviceProblem', reason: 'busy' });
+    expect(failureLog(api)?.fields).toMatchObject({ ruleId: 'azure.busy', operation: 'getReadResult' });
     expectCleanedUp(api, t);
   });
 

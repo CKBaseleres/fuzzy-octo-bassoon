@@ -76,7 +76,7 @@ The source language is detected automatically, and every Translator language can
 40. As a staff member whose upload failed, I want "Try again" to re-upload the same file without picking it again, so that I recover in one click.
 41. As a staff member, I want the hourly limit message to tell me how many minutes to wait, so that I know when I can try again.
 42. As a staff member, I want "Lingo Lens has reached today's limit. Try again tomorrow." when the daily quota is used or the service is switched off, so that I understand it isn't my fault.
-43. As a staff member, I want "Lingo Lens is busy, try again in a minute." when Azure throttles, so that I know a short wait will fix it.
+43. As a staff member, I want "Lingo Lens is busy, try again in a minute." when Azure throttles, so that I know a short wait will fix it. Any other service problem says "Something went wrong on our side. Try again."
 44. As a staff member whose file Azure couldn't translate, I want the reason named when it's known (password-protected, damaged, or Image dimensions), so that I can fix the file.
 45. As a staff member whose file failed for an unknown reason, I want "Lingo Lens couldn't translate this file. It may be damaged, protected, or not the format its name suggests. Check it opens normally and try another file.", so that I have something to try.
 46. As a staff member hit by a service problem, I want "Try again" to run the whole Translation again with the same file and language, so that I don't have to start over.
@@ -144,12 +144,15 @@ The backend is **stateless** (apart from the quota counters). The Translation id
 
 | Endpoint | Purpose |
 |---|---|
+| `GET /api/languages` | The Translator target languages (`code`, English `name`), sorted by name, for the language picker. Cached for a day (`cache-control: public, max-age=86400`). |
+| `GET /api/health` | Liveness check (`{ status: 'ok', time }`); the deploy smoke test calls it through SWA. Touches no Azure service. |
 | `POST /api/translations/uploads` | Checks quotas and the kill switch, then returns a GUID plus a **user delegation SAS** for one blob (write-only, 10-minute expiry). |
-| `POST /api/translations` | Checks the uploaded blob's real size (and deletes it if oversized), counts the Translation towards quota, and starts the batch job (Document) or the `prebuilt-read` analyze (Image). Returns the Translation id. |
+| `POST /api/translations` | Checks the uploaded blob's real size (and deletes it if oversized), counts the Translation towards quota, and starts the batch job (Document) or the `prebuilt-read` analyze (Image). Returns `202` with the Translation id. Also answers `413` (too large: the blob is over the size limit and is deleted), `429` (refused, as for uploads) and `502` (Azure refused the submit: the failed status with its `category` and optional `reason`; the Source blob is deleted). |
 | `GET /api/translations/{id}` | Polls Azure and maps the result to `translating`, `ready` or `failed` (with `category` and an optional `reason`). For an Image, the first poll that sees OCR `succeeded` runs Translator text, deletes the Image blob, calls **Delete Analyze Result**, and returns the page width and height, plus the paragraphs (polygon, original text, translation, detected language) and the handwriting flag. The first poll that sees a batch job in a terminal state deletes the Source file blob. |
 | `GET /api/translations/{id}/file` | Returns a read-only SAS (5-minute expiry) for the Translated file. |
 | `DELETE /api/translations/{id}` | Removes every blob for the Translation. Cancels a running job. |
 
+- Every `/api` response, including an unexpected `500` (body `{ error: 'internal' }`, no details), carries `X-Robots-Tag: noindex`.
 - Each `/api` request stays within SWA's 45-second limit. The backend retries Azure 429/5xx up to 3 times with exponential backoff inside that budget.
 - Blobs are named by GUID only (source and target paths keep the extension so Translator can detect the format). Filenames never leave the browser; the SPA builds the download name itself.
 
@@ -166,17 +169,17 @@ _[Error handling: user-facing behaviour](issues/12-error-handling-user-facing-be
   7. Expired
 
   A mixed PDF with untranslated scanned pages is **Completed**, not an error.
-- **The classifier:** one pure, table-driven module in the backend. Its input is `(service, httpStatus, error.code, innerError.code, job/document status)` and its output is `{ category, reason?, ruleId }`. The API returns only `category` and `reason` (`passwordProtected`, `damaged` or `badDimensions`), and the SPA owns all the wording.
+- **The classifier:** one pure, table-driven module in the backend. Its input is `(service, httpStatus, error.code, innerError.code, job/document status)` and its output is `{ category, reason?, ruleId }`. The API returns only `category` and `reason` (`passwordProtected`, `damaged` or `badDimensions` for 4; `busy` for 6 when Azure throttled), and the SPA owns all the wording.
 - **Rules:**
   - Batch document `Failed` with `InvalidRequest` or `InvalidArgument` → 4.
-  - Batch document `Failed` with `ServiceUnavailable`, `InternalServerError` or `RequestRateTooHigh` → 6 (no automatic resubmit).
+  - Batch document `Failed` with `ServiceUnavailable` or `InternalServerError` → 6; with `RequestRateTooHigh` → 6 `busy` (no automatic resubmit).
   - `Unauthorized`, `ResourceNotFound`, and submit `400`/`401`/`403`/`404` → 6, logged at error level as our fault.
   - Job `ValidationFailed` → the document's error if there is one, otherwise 6.
   - An unexpected `Cancelled` → 6. `Succeeded` with 0 characters charged → Completed.
   - Document Intelligence `InvalidContent` or `UnsupportedContent` → 4 `damaged`. `InvalidContentDimensions` → 4 `badDimensions`.
   - OCR `succeeded` but no paragraph contains a letter or digit → 5.
   - Translator `400050`/`400077` → 6 (our bug). Any other Translator 4xx → 6, error level.
-  - 429/5xx from any service after retries → 6.
+  - 429 from any service after retries → 6 `busy`. 5xx, or no response at all, after retries → 6.
   - If any part of an Image's Translator calls fails, the whole Image fails (6). There are no partial results.
 - **Fallback:** anything unmatched → 6, except a document `Failed` with top-level `InvalidRequest`/`InvalidArgument` and an unknown inner code → 4 generic.
 - **Timeouts:** 15 minutes for a Document and 3 minutes for an Image, both from the start, held as app settings. On timeout the backend cancels the job, and the user sees 6. The SPA tolerates 3 failed polls in a row before showing 6.

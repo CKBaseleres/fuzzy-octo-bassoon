@@ -10,21 +10,28 @@ import { GUID_PATTERN } from './http';
  * Images: `kind: 'image'`, operationId = the Document Intelligence analyze
  * result id, plus `targetLanguage`. Ticket 09 reads `startedAt` for the timeouts.
  */
-export interface TranslationRef {
-  kind: 'document' | 'image';
+export type TranslationRef = DocumentTranslationRef | ImageTranslationRef;
+
+interface TranslationRefBase {
   /** Our GUID; names every blob of the Translation. */
-  guid: string;
+  translationGuid: string;
   /** Source file extension (lower case). */
   extension: string;
-  /** Azure's operation id (batch job id, or analyze result id). */
+  /** Azure's operation id (batch id, or analyze result id). */
   operationId: string;
   /** When `POST /api/translations` started it. */
   startedAt: Date;
-  /**
-   * The target language. Carried for Images only: the poll that sees OCR finish
-   * calls Translator text with it. (A batch job already knows its target.)
-   */
-  targetLanguage?: string;
+}
+
+/** A Document: the batch already knows its target language. */
+export interface DocumentTranslationRef extends TranslationRefBase {
+  kind: 'document';
+}
+
+export interface ImageTranslationRef extends TranslationRefBase {
+  kind: 'image';
+  /** The poll that sees OCR finish calls Translator text with it. */
+  targetLanguage: string;
 }
 
 interface Wire {
@@ -46,11 +53,11 @@ export function encodeTranslationId(ref: TranslationRef): string {
   const wire: Wire = {
     v: 1,
     k: ref.kind === 'document' ? 'd' : 'i',
-    g: ref.guid,
+    g: ref.translationGuid,
     e: ref.extension,
     o: ref.operationId,
     s: ref.startedAt.getTime(),
-    ...(ref.targetLanguage === undefined ? {} : { t: ref.targetLanguage }),
+    ...(ref.kind === 'image' ? { t: ref.targetLanguage } : {}),
   };
   return Buffer.from(JSON.stringify(wire), 'utf8').toString('base64url');
 }
@@ -72,13 +79,7 @@ export function decodeTranslationId(id: string | undefined): TranslationRef | un
   if (typeof o !== 'string' || !OPERATION_ID.test(o)) return undefined;
   if (typeof s !== 'number' || !Number.isFinite(s)) return undefined;
   if (t !== undefined && (typeof t !== 'string' || !LANGUAGE_CODE.test(t))) return undefined;
-  if (k === 'i' && t === undefined) return undefined;
-  return {
-    kind: k === 'd' ? 'document' : 'image',
-    guid: g,
-    extension: e,
-    operationId: o,
-    startedAt: new Date(s),
-    ...(t === undefined ? {} : { targetLanguage: t }),
-  };
+  const base = { translationGuid: g, extension: e, operationId: o, startedAt: new Date(s) };
+  if (k === 'd') return { kind: 'document', ...base };
+  return t === undefined ? undefined : { kind: 'image', ...base, targetLanguage: t };
 }

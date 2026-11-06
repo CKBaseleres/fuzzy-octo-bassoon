@@ -73,6 +73,6 @@ For each: focus lands on the message, the message is read in full (it is a named
 | 5.3 | Refused, daily / kill switch | "Lingo Lens has reached today’s limit. Try again tomorrow." |  |  |
 | 5.4 | Can’t translate (damaged, protected, bad dimensions, generic) | The matching sentence / Choose another file |  |  |
 | 5.5 | No text found (blank photo) | Focus goes to the warning "No text found…", not the h2; Image shown with alt "<file>, no text found"; Choose another file is the only action |  |  |
-| 5.6 | Service problem | "Lingo Lens is busy, try again in a minute." / Try again |  |  |
+| 5.6 | Service problem | "Something went wrong on our side. Try again." (or, when Azure throttles, "Lingo Lens is busy, try again in a minute.") / Try again |  |  |
 | 5.7 | Expired | "This translation has expired, please start again." / Translate again |  |  |
 | 5.8 | After Try again / Translate again fails again | Focus moves to the new message again |  |  |

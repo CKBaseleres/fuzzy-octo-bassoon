@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { FAKE_BLOB_ORIGIN, mockApi, type RecordedRequest } from '../test/mockApi';
 import { renderWithProviders } from '../test/render';
 import { captureSaves } from '../test/saves';
-import { DocumentTranslation } from './DocumentTranslation';
+import { TranslationScreen } from './TranslationScreen';
 
 const GUID = '3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b';
 const SECOND_GUID = '9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a';
@@ -16,7 +16,7 @@ function fileOf(name: string) {
 
 function renderScreen() {
   mockApi.languages([{ code: 'fr', name: 'French' }]);
-  return renderWithProviders(<DocumentTranslation pollIntervalMs={1} />);
+  return renderWithProviders(<TranslationScreen pollIntervalMs={1} />);
 }
 
 /** Everything up to the polls answers successfully; the test arranges the rest. */
@@ -55,13 +55,29 @@ describe('Document Translation failures: Service problem', () => {
 
     await translate();
 
-    const bar = await findFailure('Lingo Lens is busy, try again in a minute.');
+    const bar = await findFailure('Something went wrong on our side. Try again.');
     expect(bar).toHaveTextContent('Reference: 3f2b8c1e');
     expect(bar).not.toHaveTextContent(GUID);
     await waitFor(() => expect(bar).toHaveFocus());
     expect(screen.getByRole('status')).toHaveTextContent('');
     expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['Try again']);
     await waitFor(() => expect(deletes(requests)).toEqual(['/api/translations/tr-1']));
+  });
+});
+
+describe('Document Translation failures: Service problem because Azure is busy', () => {
+  it('says Lingo Lens is busy only when the API reports throttling (reason busy), with the same Try again', async () => {
+    renderScreen();
+    arrangeUploadAndStart();
+    mockApi.translationStatus({ status: 'failed', category: 'serviceProblem', reason: 'busy' });
+
+    await translate();
+
+    const bar = await findFailure('Lingo Lens is busy, try again in a minute.');
+    expect(bar).toHaveTextContent('Reference: 3f2b8c1e');
+    await waitFor(() => expect(bar).toHaveFocus());
+    expect(screen.queryByText('Something went wrong on our side. Try again.')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['Try again']);
   });
 });
 
@@ -73,7 +89,7 @@ describe('Document Translation failures: retrying', () => {
     const requests = mockApi.recordRequests();
     const saves = captureSaves();
     const user = await translate(fileOf('Report.pdf'));
-    await findFailure('Lingo Lens is busy, try again in a minute.');
+    await findFailure('Something went wrong on our side. Try again.');
     mockApi.translationStatus({ status: 'translating' }, READY);
     mockApi.translatedFile();
     mockApi.blobDownload('translated bytes');
@@ -89,8 +105,8 @@ describe('Document Translation failures: retrying', () => {
     ]);
     const starts = requests.filter((r) => r.method === 'POST' && r.url === '/api/translations');
     expect(starts.map((r) => JSON.parse(r.body) as unknown)).toEqual([
-      { uploadId: GUID, extension: 'pdf', targetLanguage: 'fr' },
-      { uploadId: SECOND_GUID, extension: 'pdf', targetLanguage: 'fr' },
+      { translationGuid: GUID, extension: 'pdf', targetLanguage: 'fr' },
+      { translationGuid: SECOND_GUID, extension: 'pdf', targetLanguage: 'fr' },
     ]);
   });
 
@@ -140,7 +156,7 @@ describe('Document Translation failures: retrying', () => {
 
     await translate();
 
-    await findFailure('Lingo Lens is busy, try again in a minute.');
+    await findFailure('Something went wrong on our side. Try again.');
     await waitFor(() => expect(deletes(requests)).toEqual(['/api/translations/tr-1']));
     expect(requests.filter((r) => r.method === 'GET' && r.url === '/api/translations/tr-1')).toHaveLength(4);
   });
@@ -148,7 +164,7 @@ describe('Document Translation failures: retrying', () => {
   it('shows the category the API reports when Azure refuses the start, with nothing to delete', async () => {
     renderScreen();
     arrangeUploadAndStart();
-    mockApi.startTranslationFails(502, { status: 'failed', category: 'serviceProblem' });
+    mockApi.startTranslationFails(502, { status: 'failed', category: 'serviceProblem', reason: 'busy' });
     const requests = mockApi.recordRequests();
 
     await translate();

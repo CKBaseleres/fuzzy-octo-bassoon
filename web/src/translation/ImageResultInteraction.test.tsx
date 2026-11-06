@@ -3,7 +3,7 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockApi } from '../test/mockApi';
 import { renderWithProviders } from '../test/render';
-import { DocumentTranslation } from './DocumentTranslation';
+import { TranslationScreen } from './TranslationScreen';
 
 /**
  * Ticket 06: linking the cards and the regions on the Image, both ways, with
@@ -43,7 +43,7 @@ async function showImageResult(result: TranslationStatusResponse = MENU, fileNam
   mockApi.blobUpload();
   mockApi.startTranslation({ id: 'tr-img' });
   mockApi.translationStatus(result);
-  renderWithProviders(<DocumentTranslation pollIntervalMs={1} />);
+  renderWithProviders(<TranslationScreen pollIntervalMs={1} />);
 
   const user = userEvent.setup();
   await user.upload(screen.getByLabelText('File to translate'), new File(['x'], fileName, { type: 'image/jpeg' }));

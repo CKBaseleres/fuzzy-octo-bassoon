@@ -26,11 +26,11 @@ export const createUploadHandler: HttpHandlerFactory =
     const refusal = await refuseIfOverLimit(deps, request);
     if (refusal) return refusal;
 
-    const uploadId = randomUUID();
+    const translationGuid = randomUUID();
     const expiresOn = new Date(clock.now().getTime() + UPLOAD_SAS_MINUTES * 60_000);
-    const uploadUrl = await azure.blobs.createUploadUrl(sourceBlobName(uploadId, extension), expiresOn);
+    const uploadUrl = await azure.blobs.createUploadUrl(sourceBlobName(translationGuid, extension), expiresOn);
 
-    logEvent(context, 'upload.created', { translationGuid: uploadId, format: extension });
-    const response: CreateUploadResponse = { uploadId, uploadUrl, expiresOn: expiresOn.toISOString() };
+    logEvent(context, 'upload.created', { translationGuid, format: extension });
+    const response: CreateUploadResponse = { translationGuid, uploadUrl, expiresOn: expiresOn.toISOString() };
     return { status: 200, jsonBody: response };
   };

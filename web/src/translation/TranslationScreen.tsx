@@ -19,7 +19,7 @@ import type { FailureAction } from './failureMessages';
 import { ImageNoText, ImageResult } from './ImageResult';
 import { RefusedMessage } from './refusal';
 import { ACCEPT, checkSourceFile, type SourceFileCheck } from './sourceFile';
-import { useDocumentTranslation } from './useDocumentTranslation';
+import { useTranslation } from './useTranslation';
 
 const useStyles = makeStyles({
   form: {
@@ -58,14 +58,14 @@ const STATUS_TEXT = {
 
 export const PDF_NOTE = 'Scanned pages in mixed PDFs may stay untranslated.';
 
-export function DocumentTranslation({ pollIntervalMs = 2000 }: { pollIntervalMs?: number }) {
+export function TranslationScreen({ pollIntervalMs = 2000 }: { pollIntervalMs?: number }) {
   const styles = useStyles();
   const fileInputId = useId();
   const [languages, setLanguages] = useState<Language[]>([]);
   const [file, setFile] = useState<File>();
   const [check, setCheck] = useState<SourceFileCheck>();
   const [targetLanguage, setTargetLanguage] = useState('');
-  const { state, start, saveAgain, retryDownload, reset, translateAgain } = useDocumentTranslation({ pollIntervalMs });
+  const { state, start, saveAgain, retryDownload, reset, translateAgain } = useTranslation({ pollIntervalMs });
   const resultHeading = useRef<HTMLHeadingElement>(null);
   const downloadFailedBar = useRef<HTMLDivElement>(null);
   const pdfNoteId = useId();
@@ -113,9 +113,9 @@ export function DocumentTranslation({ pollIntervalMs = 2000 }: { pollIntervalMs?
   const failureBar = state.phase === 'failed' && !refusal && (
     <FailureMessageBar
       // A new failure (e.g. after Try again) mounts a new bar, so focus moves again.
-      key={`${state.guid ?? ''}-${state.category}`}
-      failure={{ category: state.category, reason: state.reason, extension: state.request.extension }}
-      guid={state.guid}
+      key={`${state.translationGuid ?? ''}-${state.category}`}
+      failure={{ category: state.category, reason: state.reason, extension: state.choice.extension }}
+      translationGuid={state.translationGuid}
       onAction={onFailureAction}
     />
   );
@@ -169,17 +169,17 @@ export function DocumentTranslation({ pollIntervalMs = 2000 }: { pollIntervalMs?
       </Text>
       {/* Refusals (ticket 08) show above the form instead. */}
       {failureBar && failedImageUrl ? (
-        <ImageNoText fileName={state.request.file.name} imageUrl={failedImageUrl} message={failureBar} />
+        <ImageNoText fileName={state.choice.file.name} imageUrl={failedImageUrl} message={failureBar} />
       ) : (
         failureBar
       )}
 
       {state.phase === 'ready' && state.image && state.imageUrl && (
         <ImageResult
-          fileName={state.request.file.name}
+          fileName={state.choice.file.name}
           imageUrl={state.imageUrl}
           result={state.image}
-          targetLanguage={state.request.targetLanguage}
+          targetLanguage={state.choice.targetLanguage}
           languages={languages}
           headingRef={resultHeading}
           onNewTranslation={reset}

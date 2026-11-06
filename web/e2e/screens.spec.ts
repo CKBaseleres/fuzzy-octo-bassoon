@@ -5,7 +5,7 @@ import { expectAccessibleAtEveryWidth } from './a11y';
 import { fakeApi, type FakeApi } from './fakeApi';
 import { encryptedPdf, photoPng, plainPdf, type PickedFile } from './files';
 
-/** `PDF_NOTE` in DocumentTranslation.tsx (not imported: that module pulls in React and Fluent). */
+/** `PDF_NOTE` in TranslationScreen.tsx (not imported: that module pulls in React and Fluent). */
 const PDF_NOTE = 'Scanned pages in mixed PDFs may stay untranslated.';
 
 /**
@@ -211,7 +211,12 @@ const POLLED_FAILURES: { name: string; failure: FailedTranslationResponse; text:
     failure: { status: 'failed', category: 'cantTranslate', reason: 'badDimensions' },
     text: BAD_DIMENSIONS_MESSAGE,
   },
-  { name: 'Service problem', failure: { status: 'failed', category: 'serviceProblem' }, text: 'Lingo Lens is busy' },
+  { name: 'Service problem', failure: { status: 'failed', category: 'serviceProblem' }, text: 'Something went wrong on our side' },
+  {
+    name: 'Service problem (Azure busy)',
+    failure: { status: 'failed', category: 'serviceProblem', reason: 'busy' },
+    text: 'Lingo Lens is busy',
+  },
 ];
 
 for (const { name, failure, text } of POLLED_FAILURES) {

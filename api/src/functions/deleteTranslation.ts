@@ -35,10 +35,10 @@ export const createDeleteTranslationHandler: HttpHandlerFactory =
       }
     }
 
-    for (const prefix of blobPrefixes(ref.guid)) {
+    for (const prefix of blobPrefixes(ref.translationGuid)) {
       for (const blob of await azure.blobs.listBlobs(prefix)) await azure.blobs.deleteBlob(blob.name);
     }
 
-    logEvent(context, 'translation.deleted', { translationGuid: ref.guid, format: ref.extension });
+    logEvent(context, 'translation.deleted', { translationGuid: ref.translationGuid, format: ref.extension });
     return { status: 204 };
   };

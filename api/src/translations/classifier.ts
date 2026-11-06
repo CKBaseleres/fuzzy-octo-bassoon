@@ -88,9 +88,22 @@ const INVALID_INPUT = ['InvalidRequest', 'InvalidArgument'] as const;
 export const RULES: readonly ClassifierRule[] = [
   // --- Any service ---
   {
-    // Azure busy or down, and still so after the silent retries.
+    // Azure throttling, still so after the silent retries: the SPA says "busy, try again in a minute".
     id: 'azure.busy',
-    when: { scope: ['request'], httpStatus: [429, '5xx'] },
+    when: { scope: ['request'], httpStatus: [429] },
+    category: 'serviceProblem',
+    reason: 'busy',
+  },
+  {
+    // Azure down or erroring, still so after the silent retries.
+    id: 'azure.unavailable',
+    when: { scope: ['request'], httpStatus: ['5xx'] },
+    category: 'serviceProblem',
+  },
+  {
+    // No response at all (DNS, connection reset...: the adapters' status 0), after the retries.
+    id: 'azure.unreachable',
+    when: { scope: ['request'], httpStatus: [0] },
     category: 'serviceProblem',
   },
 
@@ -105,13 +118,15 @@ export const RULES: readonly ClassifierRule[] = [
     category: 'cantTranslate',
   },
   {
-    id: 'batch.document.serviceBusy',
-    when: {
-      service: ['documentTranslation'],
-      scope: ['document'],
-      code: ['ServiceUnavailable', 'InternalServerError', 'RequestRateTooHigh'],
-    },
+    id: 'batch.document.throttled',
+    when: { service: ['documentTranslation'], scope: ['document'], code: ['RequestRateTooHigh'] },
     // No automatic resubmit: the user's Try again does it.
+    category: 'serviceProblem',
+    reason: 'busy',
+  },
+  {
+    id: 'batch.document.serviceError',
+    when: { service: ['documentTranslation'], scope: ['document'], code: ['ServiceUnavailable', 'InternalServerError'] },
     category: 'serviceProblem',
   },
   {
@@ -170,7 +185,7 @@ export const RULES: readonly ClassifierRule[] = [
     level: 'error',
   },
   {
-    // Any other 4xx (429 is `azure.busy`): our request, auth or RBAC is wrong.
+    // Any other 4xx (429 is `azure.busy`, matched above): our request, auth or RBAC is wrong.
     id: 'translator.rejected',
     when: { service: ['textTranslation'], scope: ['request'], httpStatus: ['4xx'] },
     category: 'serviceProblem',

@@ -56,16 +56,24 @@ describe('GET /api/translations/{id}: classifying a failed Document', () => {
       mapped: false,
       level: 'error',
     },
-    ...(['ServiceUnavailable', 'InternalServerError', 'RequestRateTooHigh'] as const).map(
+    ...(['ServiceUnavailable', 'InternalServerError'] as const).map(
       (code): Case => ({
         name: `document Failed with ${code}`,
         job: { status: 'Failed', document: { status: 'Failed', error: { code } } },
         expected: { status: 'failed', category: 'serviceProblem' },
-        ruleId: 'batch.document.serviceBusy',
+        ruleId: 'batch.document.serviceError',
         mapped: true,
         level: 'warning',
       }),
     ),
+    {
+      name: 'document Failed with RequestRateTooHigh (Azure throttled: busy)',
+      job: { status: 'Failed', document: { status: 'Failed', error: { code: 'RequestRateTooHigh' } } },
+      expected: { status: 'failed', category: 'serviceProblem', reason: 'busy' },
+      ruleId: 'batch.document.throttled',
+      mapped: true,
+      level: 'warning',
+    },
     ...(['Unauthorized', 'ResourceNotFound'] as const).map(
       (code): Case => ({
         name: `document Failed with ${code} (our fault: error level)`,
@@ -146,11 +154,11 @@ describe('GET /api/translations/{id}: classifying a failed Document', () => {
     expect(failureLog(api)).toBeUndefined();
   });
 
-  it('logs every error field, scrubbing SAS parameters from the message and cutting it to 300 characters', async () => {
+  it('logs every error field, redacting URLs and SAS parameters in the message and cutting it to 300 characters', async () => {
     const api = createTestApi({ now: '2026-11-05T09:00:00.000Z' });
     const t = await startDocumentTranslation(api, { extension: 'docx' });
     api.clock.advance(30_000);
-    const message = `Cannot read https://st.blob.core.windows.net/source/${'x'.repeat(10)}/file.docx?sv=2024-11-04&se=2026-11-05&sp=r&sig=SECRETSIG ${'y'.repeat(400)}`;
+    const message = `Cannot read https://st.blob.core.windows.net/source/${'x'.repeat(10)}/file.docx?sv=2024-11-04&se=2026-11-05&sp=r&sig=SECRETSIG (see https://trl-x.cognitiveservices.azure.com/translator/document/batches/op-1), sig=LOOSESIG ${'y'.repeat(400)}`;
     Object.assign(t.job, {
       status: 'Failed',
       requestId: 'req-123',
@@ -163,7 +171,7 @@ describe('GET /api/translations/{id}: classifying a failed Document', () => {
     expect(log).toEqual({
       level: 'error',
       fields: {
-        translationGuid: t.guid,
+        translationGuid: t.translationGuid,
         format: 'docx',
         durationMs: 30_000,
         category: 'cantTranslate',
@@ -180,9 +188,8 @@ describe('GET /api/translations/{id}: classifying a failed Document', () => {
     });
     const logged = log!.fields.message as string;
     expect(logged).toHaveLength(300);
-    expect(logged).toContain('Cannot read https://st.blob.core.windows.net/source/');
-    expect(logged).not.toMatch(/SECRETSIG|2024-11-04/);
-    expect(logged).toContain('sig=REDACTED');
+    expect(logged).toMatch(/^Cannot read REDACTED_URL \(see REDACTED_URL\), sig=REDACTED y/);
+    expect(logged).not.toMatch(/https:|blob\.core|cognitiveservices|file\.docx|SECRETSIG|LOOSESIG|2024-11-04/);
   });
 
   // (A 404 means the job is unknown: Expired, ticket 07.)
@@ -248,10 +255,21 @@ describe('GET /api/translations/{id}: retrying Azure hiccups', () => {
     expect(response.json<TranslationStatusResponse>()).toEqual({ status: 'failed', category: 'serviceProblem' });
     expect(failureLog(api)).toMatchObject({
       level: 'warning',
-      fields: { ruleId: 'azure.busy', mapped: true, httpStatus: 503, operation: 'getBatchStatus' },
+      fields: { ruleId: 'azure.unavailable', mapped: true, httpStatus: 503, operation: 'getBatchStatus' },
     });
     const gaps = attemptsAt.slice(1).map((at, i) => at - attemptsAt[i]!);
     expect(gaps).toEqual([1000, 2000, 4000]);
+  });
+
+  it('reports Service problem with reason busy when Azure still throttles (429) after 3 retries', async () => {
+    const api = createTestApi();
+    const t = await startDocumentTranslation(api);
+    api.azure.script('documentTranslation', 'getBatchStatus').rejects(busy(429));
+
+    const response = await poll(api, t.id);
+
+    expect(response.json<TranslationStatusResponse>()).toEqual({ status: 'failed', category: 'serviceProblem', reason: 'busy' });
+    expect(failureLog(api)).toMatchObject({ level: 'warning', fields: { ruleId: 'azure.busy', reason: 'busy', httpStatus: 429 } });
   });
 
   it('does not retry a 4xx other than 429', async () => {

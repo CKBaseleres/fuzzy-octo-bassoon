@@ -4,7 +4,7 @@ import type {
   FailureCategory,
   FailureReason,
   ImageExtension,
-  ImageTranslationResult,
+  ImageTranslationReady,
 } from '@lingo-lens/shared';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -21,7 +21,7 @@ import { readRefusal, type Refusal } from './refusal';
 import { saveFile } from './saveFile';
 import { translatedFileName } from './sourceFile';
 
-export interface TranslationRequest {
+export interface TranslationChoice {
   file: File;
   extension: DocumentExtension | ImageExtension;
   targetLanguage: string;
@@ -37,31 +37,31 @@ export interface Failure {
 /**
  * One Translation at a time. The Source file and the Translated file live only
  * in memory (nothing in sessionStorage/localStorage): a refresh abandons it.
- * `guid` is our upload id, shown as the reference code when something fails.
+ * `translationGuid` (from the upload SAS step) names the Translation's blobs and is shown as the reference code when something fails.
  */
 export type TranslationState =
   | { phase: 'idle' }
-  | { phase: 'uploading'; request: TranslationRequest }
-  | { phase: 'translating'; request: TranslationRequest; id: string; guid: string }
+  | { phase: 'uploading'; choice: TranslationChoice }
+  | { phase: 'translating'; choice: TranslationChoice; id: string; translationGuid: string }
   | {
       phase: 'ready';
-      request: TranslationRequest;
+      choice: TranslationChoice;
       id: string;
-      guid: string;
+      translationGuid: string;
       /** Document: the Translated file, kept in memory for "Save again". */
       saved?: { blob: Blob; fileName: string };
       /** Document: the last download or save failed; the Translation stays Ready and can be fetched again. */
       downloadFailed?: boolean;
       /** Image: the result, held only in memory (Azure has already deleted everything). */
-      image?: ImageTranslationResult;
+      image?: ImageTranslationReady;
       /** Image: an object URL of the Source file, so it is shown without being downloaded back. */
       imageUrl?: string;
     }
   | ({
       phase: 'failed';
-      request: TranslationRequest;
+      choice: TranslationChoice;
       id?: string;
-      guid?: string;
+      translationGuid?: string;
       /** Image with No text found: the Image is still shown, from an object URL of the Source file. */
       imageUrl?: string;
     } & Failure);
@@ -104,7 +104,7 @@ const deleteQuietly = (id: string) => deleteTranslation(id).catch(() => undefine
  * a failed download leaves the Translation Ready ("Download failed. Try again").
  * For an Image the ready poll carries the whole result and the run ends there.
  */
-export function useDocumentTranslation({ pollIntervalMs }: { pollIntervalMs: number }) {
+export function useTranslation({ pollIntervalMs }: { pollIntervalMs: number }) {
   const [state, setState] = useState<TranslationState>({ phase: 'idle' });
   // Bumped on reset/unmount so a stale run stops touching state.
   const runRef = useRef(0);
@@ -124,18 +124,18 @@ export function useDocumentTranslation({ pollIntervalMs }: { pollIntervalMs: num
   );
 
   /** Fetches a fresh file SAS, downloads and saves. Only a successful save DELETEs. */
-  const download = useCallback(async (request: TranslationRequest, id: string, guid: string, live: () => boolean) => {
+  const download = useCallback(async (choice: TranslationChoice, id: string, translationGuid: string, live: () => boolean) => {
     try {
       const file = await getTranslatedFile(id);
       const blob = await downloadFromBlob(file.url);
       if (!live()) return;
-      const fileName = translatedFileName(request.file.name, request.targetLanguage, file.extension);
+      const fileName = translatedFileName(choice.file.name, choice.targetLanguage, file.extension);
       saveFile(blob, fileName);
-      setState({ phase: 'ready', request, id, guid, saved: { blob, fileName } });
+      setState({ phase: 'ready', choice, id, translationGuid, saved: { blob, fileName } });
     } catch (error) {
       if (!live()) return;
-      if (isExpired(error)) setState({ phase: 'failed', request, id, guid, category: 'expired' });
-      else setState({ phase: 'ready', request, id, guid, downloadFailed: true });
+      if (isExpired(error)) setState({ phase: 'failed', choice, id, translationGuid, category: 'expired' });
+      else setState({ phase: 'ready', choice, id, translationGuid, downloadFailed: true });
       return;
     }
     // The Translated file now lives in memory only.
@@ -143,39 +143,39 @@ export function useDocumentTranslation({ pollIntervalMs }: { pollIntervalMs: num
   }, []);
 
   const start = useCallback(
-    async (request: TranslationRequest) => {
+    async (choice: TranslationChoice) => {
       const run = ++runRef.current;
       releaseImage();
       const live = () => runRef.current === run;
-      let guid: string | undefined;
+      let translationGuid: string | undefined;
       let id: string | undefined;
       const fail = (failure: Failure, imageUrl?: string) => {
         if (id) void deleteQuietly(id);
-        if (live()) setState({ phase: 'failed', request, id, guid, ...failure, ...(imageUrl ? { imageUrl } : {}) });
+        if (live()) setState({ phase: 'failed', choice, id, translationGuid, ...failure, ...(imageUrl ? { imageUrl } : {}) });
       };
-      const showImage = () => (imageUrlRef.current = URL.createObjectURL(request.file));
+      const showImage = () => (imageUrlRef.current = URL.createObjectURL(choice.file));
 
-      setState({ phase: 'uploading', request });
+      setState({ phase: 'uploading', choice });
       let uploadUrl: string;
       try {
-        ({ uploadId: guid, uploadUrl } = await createUpload({ extension: request.extension }));
+        ({ translationGuid, uploadUrl } = await createUpload({ extension: choice.extension }));
       } catch (error) {
         return fail(await requestFailure(error));
       }
       try {
-        await uploadToBlob(uploadUrl, request.file);
+        await uploadToBlob(uploadUrl, choice.file);
       } catch {
         return fail({ category: 'uploadFailed' });
       }
       if (!live()) return;
 
       try {
-        ({ id } = await startTranslation({ uploadId: guid, extension: request.extension, targetLanguage: request.targetLanguage }));
+        ({ id } = await startTranslation({ translationGuid, extension: choice.extension, targetLanguage: choice.targetLanguage }));
       } catch (error) {
         return fail(await requestFailure(error));
       }
       if (!live()) return;
-      setState({ phase: 'translating', request, id, guid });
+      setState({ phase: 'translating', choice, id, translationGuid });
 
       for (let failedPolls = 0; ; ) {
         try {
@@ -190,7 +190,7 @@ export function useDocumentTranslation({ pollIntervalMs }: { pollIntervalMs: num
           if (status.status === 'ready' && status.kind === 'image') {
             // The poll that returned the result also deleted the Image and the analyze result.
             const { status: _status, kind: _kind, ...image } = status;
-            setState({ phase: 'ready', request, id, guid, image, imageUrl: showImage() });
+            setState({ phase: 'ready', choice, id, translationGuid, image, imageUrl: showImage() });
             return;
           }
           if (status.status === 'ready') break;
@@ -202,7 +202,7 @@ export function useDocumentTranslation({ pollIntervalMs }: { pollIntervalMs: num
         if (!live()) return;
       }
 
-      await download(request, id, guid, live);
+      await download(choice, id, translationGuid, live);
     },
     [pollIntervalMs, releaseImage, download],
   );
@@ -211,7 +211,7 @@ export function useDocumentTranslation({ pollIntervalMs }: { pollIntervalMs: num
   const retryDownload = useCallback(() => {
     if (state.phase !== 'ready') return;
     const run = runRef.current;
-    void download(state.request, state.id, state.guid, () => runRef.current === run);
+    void download(state.choice, state.id, state.translationGuid, () => runRef.current === run);
   }, [state, download]);
 
   const saveAgain = useCallback(() => {
@@ -226,7 +226,7 @@ export function useDocumentTranslation({ pollIntervalMs }: { pollIntervalMs: num
 
   /** Runs the whole Translation again with the same in-memory file and target language. */
   const translateAgain = useCallback(() => {
-    if (state.phase === 'failed') void start(state.request);
+    if (state.phase === 'failed') void start(state.choice);
   }, [state, start]);
 
   return { state, start, saveAgain, retryDownload, reset, translateAgain };

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { mockApi } from '../test/mockApi';
 import { renderWithProviders } from '../test/render';
 import { captureSaves } from '../test/saves';
-import { DocumentTranslation } from './DocumentTranslation';
+import { TranslationScreen } from './TranslationScreen';
 
 const LANGUAGES = [
   { code: 'zh-Hans', name: 'Chinese Simplified' },
@@ -19,7 +19,7 @@ function fileOf(name: string, size = 1024, type = '') {
 
 function renderScreen() {
   mockApi.languages(LANGUAGES);
-  return renderWithProviders(<DocumentTranslation pollIntervalMs={1} />);
+  return renderWithProviders(<TranslationScreen pollIntervalMs={1} />);
 }
 
 /** Lets a test pick files the `accept` filter would hide (drag and drop, "All files"). */
@@ -128,7 +128,7 @@ describe('Document Translation: translating', () => {
     expect(upload?.headers.get('x-ms-blob-type')).toBe('BlockBlob');
     const start = requests.find((r) => r.method === 'POST' && r.url === '/api/translations');
     expect(JSON.parse(start!.body)).toEqual({
-      uploadId: '3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b',
+      translationGuid: '3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b',
       extension: 'pdf',
       targetLanguage: 'fr',
     });

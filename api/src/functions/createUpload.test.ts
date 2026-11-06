@@ -15,10 +15,10 @@ describe('POST /api/translations/uploads', () => {
 
     expect(response.status).toBe(200);
     const body = response.json<CreateUploadResponse>();
-    expect(body.uploadId).toMatch(GUID);
+    expect(body.translationGuid).toMatch(GUID);
     expect(body.expiresOn).toBe('2026-11-05T09:10:00.000Z');
     const url = new URL(body.uploadUrl);
-    expect(url.pathname).toBe(`/source/${body.uploadId}/file.pdf`);
+    expect(url.pathname).toBe(`/source/${body.translationGuid}/file.pdf`);
     expect(url.searchParams.get('sp')).toBe('w');
     expect(url.searchParams.get('se')).toBe('2026-11-05T09:10:00.000Z');
   });
@@ -29,7 +29,7 @@ describe('POST /api/translations/uploads', () => {
     const first = (await api.call(createUploadHandler, request({ extension: 'docx' }))).json<CreateUploadResponse>();
     const second = (await api.call(createUploadHandler, request({ extension: 'docx' }))).json<CreateUploadResponse>();
 
-    expect(first.uploadId).not.toBe(second.uploadId);
+    expect(first.translationGuid).not.toBe(second.translationGuid);
   });
 
   it('normalises the extension to lower case', async () => {
@@ -59,7 +59,7 @@ describe('POST /api/translations/uploads', () => {
 
     expect(api.logs).toContainEqual({
       level: 'information',
-      args: ['upload.created', { translationGuid: body.uploadId, format: 'pdf' }],
+      args: ['upload.created', { translationGuid: body.translationGuid, format: 'pdf' }],
     });
     expect(JSON.stringify(api.logs)).not.toContain('sig=');
   });

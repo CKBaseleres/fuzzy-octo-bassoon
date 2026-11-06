@@ -52,7 +52,7 @@ export function fakeApi(page: Page) {
     async createUpload() {
       await page.route('**/api/translations/uploads', (route) =>
         json<CreateUploadResponse>(route, {
-          uploadId: UPLOAD_ID,
+          translationGuid: UPLOAD_ID,
           uploadUrl: `${FAKE_BLOB_ORIGIN}/source/${UPLOAD_ID}/file.bin?sp=cw&sig=fake`,
           expiresOn: '2030-01-01T00:00:00.000Z',
         }),

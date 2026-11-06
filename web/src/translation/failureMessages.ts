@@ -1,4 +1,4 @@
-import type { FailureCategory, FailureReason } from '@lingo-lens/shared';
+import type { CantTranslateReason, FailureCategory, FailureReason } from '@lingo-lens/shared';
 import { BAD_DIMENSIONS_MESSAGE, PROTECTED_MESSAGE } from './sourceFile';
 
 /** The one action a failure message may offer. */
@@ -29,7 +29,7 @@ export interface FailureDetails {
 const TRY_AGAIN: FailureAction = { kind: 'retry', label: 'Try again' };
 const CHOOSE_ANOTHER_FILE: FailureAction = { kind: 'chooseAnotherFile', label: 'Choose another file' };
 
-const CANT_TRANSLATE: Record<FailureReason | 'generic', (d: FailureDetails) => string> = {
+const CANT_TRANSLATE: Record<CantTranslateReason | 'generic', (d: FailureDetails) => string> = {
   generic: () =>
     'Lingo Lens couldn’t translate this file. It may be damaged, protected, or not the format its name suggests. Check it opens normally and try another file.',
   // Same words as the browser checks (category 1, ticket 11).
@@ -56,7 +56,7 @@ export const FAILURE_MESSAGES: { [C in FailureCategory]: (details: FailureDetail
   }),
   cantTranslate: (d) => ({
     intent: 'error',
-    text: CANT_TRANSLATE[d.reason ?? 'generic'](d),
+    text: CANT_TRANSLATE[d.reason === undefined || d.reason === 'busy' ? 'generic' : d.reason](d),
     action: CHOOSE_ANOTHER_FILE,
   }),
   noTextFound: () => ({
@@ -66,9 +66,11 @@ export const FAILURE_MESSAGES: { [C in FailureCategory]: (details: FailureDetail
     text: 'Try a sharper, straighter photo. Some handwriting and languages can’t be read.',
     action: CHOOSE_ANOTHER_FILE,
   }),
-  serviceProblem: () => ({
+  serviceProblem: (d) => ({
     intent: 'error',
-    text: 'Lingo Lens is busy, try again in a minute.',
+    // "Busy" only when Azure throttled (reason `busy`); timeouts, 5xx, our own
+    // errors and 4 failed polls in a row get the general sentence.
+    text: d.reason === 'busy' ? 'Lingo Lens is busy, try again in a minute.' : 'Something went wrong on our side. Try again.',
     action: TRY_AGAIN,
   }),
   expired: () => ({
@@ -82,4 +84,4 @@ export const FAILURE_MESSAGES: { [C in FailureCategory]: (details: FailureDetail
 export const failureMessage = (details: FailureDetails): FailureMessage => FAILURE_MESSAGES[details.category](details);
 
 /** "Reference: <first 8 characters of the GUID>". */
-export const referenceCode = (guid: string) => guid.slice(0, 8);
+export const referenceCode = (translationGuid: string) => translationGuid.slice(0, 8);

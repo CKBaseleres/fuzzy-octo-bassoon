@@ -2,13 +2,13 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockApi } from '../test/mockApi';
 import { renderWithProviders } from '../test/render';
-import { DocumentTranslation } from './DocumentTranslation';
+import { TranslationScreen } from './TranslationScreen';
 
 // Ticket 08: quota and kill-switch refusals (429 + Retry-After).
 
 function renderScreen() {
   mockApi.languages([{ code: 'fr', name: 'French' }]);
-  return renderWithProviders(<DocumentTranslation pollIntervalMs={1} />);
+  return renderWithProviders(<TranslationScreen pollIntervalMs={1} />);
 }
 
 async function translate() {
