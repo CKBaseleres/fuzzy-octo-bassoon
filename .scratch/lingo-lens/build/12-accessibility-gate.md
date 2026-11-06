@@ -6,7 +6,7 @@ Spec: [../spec.md](../spec.md) (Status, errors and accessibility)
 
 **Blocked by:** [06: Image result interaction and responsive layout](06-image-result-interaction-and-responsive-layout.md), [10: Failures, part 2: Image errors and No text found](10-failures-image-errors-and-no-text-found.md)
 
-**Status:** ready-for-agent
+**Status:** ready-for-human
 
 - [x] axe runs in the PR workflow on every state: empty, picking, each rejection, uploading, translating, Document ready, Image result (with a block selected), each failure category, Expired and Refused
 - [x] Every screen is checked at 320, 768 and desktop widths, with no horizontal scrolling and no zoom blocking
@@ -14,3 +14,7 @@ Spec: [../spec.md](../spec.md) (Status, errors and accessibility)
 - [ ] A checklist of the manual pass is recorded with its date and outcome
 
 **Agent notes (ticket-12):** the automated gate is `web/e2e/` (Playwright + `@axe-core/playwright` against `vite preview` of the real build, `/api` and Blob faked with `page.route`; 24 states × 320/768/1280). `npm run test:a11y` runs it, `npm run check` includes it, and `pr.yml` runs it as the `a11y` job. The checklist to fill in is [docs/accessibility/manual-screen-reader-pass.md](../../../docs/accessibility/manual-screen-reader-pass.md): the last two boxes stay open until a person runs it and records date and outcome.
+
+## Comments
+
+- 2026-11-06: the axe browser suite is merged on `lingo-lens-mvp` and runs in the PR workflow. What is left is human-only: the manual pass in `docs/accessibility/manual-screen-reader-pass.md`.

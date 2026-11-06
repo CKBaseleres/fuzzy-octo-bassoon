@@ -6,7 +6,7 @@ Spec: [../spec.md](../spec.md) (Platform and hosting; Infrastructure and CI)
 
 **Blocked by:** [02: Repo skeleton and test seams](02-repo-skeleton-and-test-seams.md)
 
-**Status:** ready-for-agent
+**Status:** ready-for-human
 
 - [x] **The bootstrap Bicep** (subscription scope, run once by hand) creates `rg-lingolens-dev` and `rg-lingolens-prod`, one user-assigned deploy identity per environment with a federated credential scoped to its GitHub Environment, and Contributor plus an RBAC Administrator role conditioned to assign only Cognitive Services User and Storage Blob Data Contributor. A runbook covers creating the `dev` and `prod` GitHub Environments.
 - [x] **The main Bicep** with dev and prod parameter files creates:
@@ -43,3 +43,5 @@ The list is `assignableByDeployIdentity` in `infra/shared/roles.bicep`. The cond
 5. Push to GitHub, then run **Infra** (workflow_dispatch) followed by **App** (workflow_dispatch) on `main`.
 6. App's smoke step curls `https://<dev-swa>/api/health` through the SWA. When it passes, tick "The dev URL shows the health response". Also check that `https://<func>.azurewebsites.net/api/health` is refused (401), which proves the API is reachable only through the proxy.
 
+
+- 2026-11-06: the code is merged on `lingo-lens-mvp`. What is left is human-only: run the bootstrap runbook in `infra/README.md`, then the first dev deploy.

@@ -6,7 +6,7 @@ Spec: [../spec.md](../spec.md) (Translation pipelines; API contract; Files and r
 
 **Blocked by:** [03: Infrastructure bootstrap and dev deploy](03-infrastructure-bootstrap-and-dev-deploy.md)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] **File picker:** accepts the batch Document formats (pdf, doc/docx, xls/xlsx, ppt/pptx, odt/ods/odp, rtf, md, html/htm, mhtml/mht, msg, txt, csv, tsv/tab, xlf). Shows "Documents up to 40 MB · Images up to 20 MB". Rejects inline any file of the wrong type, over 40 MB, or empty.
 - [x] **Language picker:** offers every Translator target language; the source language is auto-detected
@@ -31,3 +31,5 @@ Left unticked because they can only be confirmed against real Azure (ticket 01):
 - The Function App's `GET /api/languages` calls Translator's public `/languages` endpoint (no auth); confirm outbound access from Flex Consumption.
 
 Notes for later tickets are in the build's conventions note ("Ticket 04").
+
+- 2026-11-06: resolved on `lingo-lens-mvp` (code complete, all tests green). The unticked criteria above need real Azure or GitHub and are verified in [01: Verify against real Azure](01-verify-against-real-azure.md) and [14: Prod environment and first release](14-prod-environment-and-first-release.md).

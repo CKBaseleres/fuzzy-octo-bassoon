@@ -6,7 +6,7 @@ Spec: [../spec.md](../spec.md) (Translation pipelines; API contract; Image resul
 
 **Blocked by:** [04: Document Translation: happy path](04-document-translation-happy-path.md)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] The picker also accepts Images (JPEG, PNG, BMP, TIFF, HEIF), up to 20 MB, using the same direct upload as Documents
 - [ ] `POST /api/translations` for an Image starts a Document Intelligence `prebuilt-read` (v4.0 `2024-11-30`) analyze through a 5-minute read-only SAS URL
@@ -33,3 +33,5 @@ Design notes:
 - Zero paragraphs currently comes back as `ready` with an empty list (no Translator call); ticket 10 maps it to No text found.
 
 Notes for later tickets are in the build's conventions note ("Ticket 05").
+
+- 2026-11-06: resolved on `lingo-lens-mvp` (code complete, all tests green). The unticked criteria above need real Azure or GitHub and are verified in [01: Verify against real Azure](01-verify-against-real-azure.md) and [14: Prod environment and first release](14-prod-environment-and-first-release.md).

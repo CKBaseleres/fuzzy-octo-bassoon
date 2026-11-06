@@ -6,7 +6,7 @@ Spec: [../spec.md](../spec.md) (Browser checks (category 1))
 
 **Blocked by:** [05: Image Translation: pipeline and result screen](05-image-translation-pipeline-and-result-screen.md)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] A `.docx`, `.xlsx` or `.pptx` whose first bytes are the OLE signature `D0 CF 11 E0`, rather than a ZIP's `PK`, is rejected inline: "This file is password-protected or encrypted. Remove the protection and try again."
 - [x] A PDF with `/Encrypt` in its last ~64 KB gets the same rejection

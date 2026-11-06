@@ -6,7 +6,7 @@ Spec: [../spec.md](../spec.md) (Error classification; Status, errors and accessi
 
 **Blocked by:** [04: Document Translation: happy path](04-document-translation-happy-path.md)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] **The classifier:** one pure, table-driven module. Input: `(service, httpStatus, error.code, innerError.code, job/document status)`. Output: `{ category, reason?, ruleId }`. The API returns only `category` and `reason`.
 - [x] **Batch and Translator rules** as in the spec:

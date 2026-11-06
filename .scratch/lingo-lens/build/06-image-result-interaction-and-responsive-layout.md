@@ -6,7 +6,7 @@ Spec: [../spec.md](../spec.md) (Image result screen; Status, errors and accessib
 
 **Blocked by:** [05: Image Translation: pipeline and result screen](05-image-translation-pipeline-and-result-screen.md)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] Hovering or focusing a card previews its region (highlighted, with the other regions dimmed)
 - [x] A persistent **selected block**: tap, click, Enter or Space on a card selects it; tapping it again or tapping outside clears it

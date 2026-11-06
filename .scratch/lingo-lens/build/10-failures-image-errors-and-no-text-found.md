@@ -6,7 +6,7 @@ Spec: [../spec.md](../spec.md) (Error classification; Image result screen)
 
 **Blocked by:** [05: Image Translation: pipeline and result screen](05-image-translation-pipeline-and-result-screen.md), [09: Failures, part 1: Document errors, retries and timeouts](09-failures-document-errors-retries-and-timeouts.md)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [x] Document Intelligence `InvalidContent` or `UnsupportedContent` → 4 `damaged`; `InvalidContentDimensions` → 4 `badDimensions` ("This image is too small or too large to read")
 - [x] OCR `succeeded` but no paragraph contains a letter or digit → 5 No text found. The Image still shows on the left, and a warning `MessageBar` takes the place of the card list: "Try a sharper, straighter photo. Some handwriting and languages can't be read." Action: Choose another file.

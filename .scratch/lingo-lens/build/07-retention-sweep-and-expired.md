@@ -6,7 +6,7 @@ Spec: [../spec.md](../spec.md) (Files and retention)
 
 **Blocked by:** [04: Document Translation: happy path](04-document-translation-happy-path.md)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] A timer-triggered Function runs every 5 minutes. It deletes every blob older than 60 minutes (measured from upload) and cancels any batch job still running for those blobs.
 - [x] Bicep sets a Blob lifecycle rule that deletes anything older than 1 day (the backstop), and turns off soft delete, versioning and point-in-time restore
@@ -24,3 +24,5 @@ Built on branch `ticket-07` (code only: nothing was deployed or run against Azur
 - **Abandon:** the SPA keeps nothing in `sessionStorage`/`localStorage` (asserted in a Seam 2 test); the sweep cleans up.
 
 Notes for later tickets are in the build's conventions note ("Ticket 07").
+
+- 2026-11-06: resolved on `lingo-lens-mvp` (code complete, all tests green). The unticked criteria above need real Azure or GitHub and are verified in [01: Verify against real Azure](01-verify-against-real-azure.md) and [14: Prod environment and first release](14-prod-environment-and-first-release.md).

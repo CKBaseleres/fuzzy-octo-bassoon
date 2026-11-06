@@ -6,7 +6,7 @@ Spec: [../spec.md](../spec.md) (Platform and hosting; Testing Decisions)
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-human
+**Status:** resolved
 
 - [ ] The repo is under git with a GitHub remote, and npm workspaces for `web` (React + Fluent UI React v9), `api` (Azure Functions v4, TypeScript on Node), `shared` (request and response types) and `infra` (Bicep, empty for now)
 - [x] `GET /api/health` returns a typed response from `shared`, and the SPA shell renders it
@@ -18,3 +18,5 @@ Spec: [../spec.md](../spec.md) (Platform and hosting; Testing Decisions)
 ## Comments
 
 **Implementer (ticket-02 branch):** Everything except the GitHub remote is done. The repo is under local git with the four npm workspaces, but by instruction no GitHub repo or remote was created, so the first criterion is left for a human. The PR workflow (`.github/workflows/pr.yml`) has been written but has never run. The local Azure Functions Core Tools here is 4.0.4670, which is too old for the v4 Node model ("0 functions found"); you need 4.0.5382 or later to see `/api/health` under `func start`. The handler is covered by tests, and the built bundle loads.
+
+- 2026-11-06: resolved on `lingo-lens-mvp` (code complete, all tests green). The unticked criteria above need real Azure or GitHub and are verified in [01: Verify against real Azure](01-verify-against-real-azure.md) and [14: Prod environment and first release](14-prod-environment-and-first-release.md).
