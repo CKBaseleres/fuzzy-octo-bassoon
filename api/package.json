@@ -1,0 +1,23 @@
+{
+  "name": "@lingo-lens/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "node build.mjs",
+    "start": "npm run build && func start"
+  },
+  "dependencies": {
+    "@azure/data-tables": "^13.3.2",
+    "@azure/functions": "^4.17.0",
+    "@azure/identity": "^4.13.1",
+    "@azure/storage-blob": "^12.32.0"
+  },
+  "devDependencies": {
+    "@lingo-lens/shared": "*"
+  }
+}

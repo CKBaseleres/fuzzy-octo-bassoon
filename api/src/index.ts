@@ -1,0 +1,131 @@
+// Composition root: the only place production dependencies are created and
+// Functions are registered with the host. Handlers never import from here.
+import { app, type HttpFunctionOptions } from '@azure/functions';
+import { DefaultAzureCredential } from '@azure/identity';
+import { createAzureServices } from './azure/azureServices';
+import { withinRequestBudget, withRetries } from './azure/retries';
+import { systemClock } from './clock';
+import { guardHttpHandler } from './guardrails/apiHeaders';
+import { DEFAULT_TIMEOUTS, type Deps } from './deps';
+import { createUploadHandler } from './functions/createUpload';
+import { createDeleteTranslationHandler } from './functions/deleteTranslation';
+import { createGetLanguagesHandler } from './functions/getLanguages';
+import { createGetTranslatedFileHandler } from './functions/getTranslatedFile';
+import { createGetTranslationHandler } from './functions/getTranslation';
+import { createHealthHandler } from './functions/health';
+import { createStartTranslationHandler } from './functions/startTranslation';
+import { createSweepHandler, SWEEP_SCHEDULE } from './functions/sweep';
+
+/** App settings are read lazily so a missing one fails the request, not host start-up (and /api/health keeps working). */
+const setting = (name: string) => process.env[name] ?? '';
+
+/** A quota setting; anything but a whole number >= 0 fails safe to 0 (refuse every Translation). */
+const quota = (name: string) => {
+  const value = Number(setting(name).trim() || NaN);
+  return Number.isInteger(value) && value >= 0 ? value : 0;
+};
+
+/** A positive number of minutes, or the spec's default. */
+const minutes = (name: string, fallback: number) => {
+  const value = Number(setting(name));
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+};
+
+const deps: Deps = {
+  // Silent retries of Azure 429/5xx; see azure/retries.ts.
+  azure: withRetries(
+    createAzureServices(
+      {
+        storageAccountName: setting('STORAGE_ACCOUNT_NAME'),
+        blobEndpoint: setting('STORAGE_BLOB_ENDPOINT'),
+        translatorEndpoint: setting('TRANSLATOR_ENDPOINT'),
+        documentIntelligenceEndpoint: setting('DOCUMENT_INTELLIGENCE_ENDPOINT'),
+        tableEndpoint: setting('STORAGE_TABLE_ENDPOINT'),
+        quotaTableName: setting('QUOTA_TABLE_NAME'),
+      },
+      new DefaultAzureCredential(),
+    ),
+    systemClock,
+  ),
+  clock: systemClock,
+  // Changing an app setting restarts the app, so reading these once is enough.
+  limits: {
+    translationsEnabled: setting('TRANSLATIONS_ENABLED').trim().toLowerCase() === 'true',
+    dailyQuota: quota('DAILY_TRANSLATION_QUOTA'),
+    hourlyPerIpQuota: quota('HOURLY_PER_IP_QUOTA'),
+  },
+  timeouts: {
+    documentMinutes: minutes('DOCUMENT_TIMEOUT_MINUTES', DEFAULT_TIMEOUTS.documentMinutes),
+    imageMinutes: minutes('IMAGE_TIMEOUT_MINUTES', DEFAULT_TIMEOUTS.imageMinutes),
+  },
+};
+
+// Every HTTP invocation gets its own 45-second retry budget (SWA's /api limit).
+app.hook.preInvocation((hook) => {
+  if (hook.invocationContext.options.trigger.type !== 'httpTrigger') return;
+  const handler = hook.functionHandler;
+  hook.functionHandler = (trigger, context) =>
+    withinRequestBudget(systemClock, () => handler(trigger, context) as unknown);
+});
+
+/**
+ * Registers an HTTP Function behind `guardHttpHandler`: X-Robots-Tag: noindex on
+ * every /api response (SWA globalHeaders skip the API), and a safe 500 for any throw.
+ */
+const http = (name: string, options: HttpFunctionOptions) =>
+  app.http(name, { ...options, handler: guardHttpHandler(options.handler) });
+
+http('health', {
+  route: 'health',
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  handler: createHealthHandler(deps),
+});
+
+http('languages', {
+  route: 'languages',
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  handler: createGetLanguagesHandler(deps),
+});
+
+http('createUpload', {
+  route: 'translations/uploads',
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  handler: createUploadHandler(deps),
+});
+
+http('startTranslation', {
+  route: 'translations',
+  methods: ['POST'],
+  authLevel: 'anonymous',
+  handler: createStartTranslationHandler(deps),
+});
+
+http('getTranslation', {
+  route: 'translations/{id}',
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  handler: createGetTranslationHandler(deps),
+});
+
+http('deleteTranslation', {
+  route: 'translations/{id}',
+  methods: ['DELETE'],
+  authLevel: 'anonymous',
+  handler: createDeleteTranslationHandler(deps),
+});
+
+http('getTranslatedFile', {
+  route: 'translations/{id}/file',
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  handler: createGetTranslatedFileHandler(deps),
+});
+
+// Retention (ticket 07): every 5 minutes, delete blobs older than 60 minutes and cancel their jobs.
+app.timer('retentionSweep', {
+  schedule: SWEEP_SCHEDULE,
+  handler: createSweepHandler(deps),
+});

@@ -1,0 +1,103 @@
+name: PR
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    env:
+      # infra tests compile the Bicep; fail rather than skip if the CLI is missing.
+      REQUIRE_BICEP: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      # Standalone Bicep CLI at ~/.azure/bin/bicep, which infra/tests/bicep.ts finds.
+      - name: Install Bicep CLI
+        run: az bicep install
+
+      # Each step runs across every workspace (shared, api, web, infra).
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  a11y:
+    name: Accessibility (axe, 320 / 768 / desktop)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+
+      # Builds the SPA, serves it with `vite preview` and runs axe on every screen
+      # state at each width, with /api and Blob Storage faked (web/e2e).
+      - run: npm run test:a11y
+        env:
+          CI: 'true'
+
+      - name: Upload the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+
+  what-if:
+    name: Bicep what-if against dev
+    runs-on: ubuntu-latest
+    # Needs the bootstrap (repo variables set) and an OIDC token, which GitHub
+    # does not issue to pull requests from forks.
+    if: >-
+      vars.AZURE_DEV_CLIENT_ID != '' &&
+      (github.event_name != 'pull_request' ||
+       github.event.pull_request.head.repo.full_name == github.repository)
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # No GitHub Environment here (so deployment-branch rules on `dev` do not block
+      # PRs); the dev identity trusts this repo's pull_request subject instead.
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_DEV_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: What-if
+        run: |
+          az deployment group what-if \
+            --resource-group rg-lingolens-dev \
+            --template-file infra/main.bicep \
+            --parameters infra/dev.bicepparam
+

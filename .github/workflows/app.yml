@@ -1,0 +1,75 @@
+name: App
+
+# Builds the SPA and the Function App ONCE, then deploys those same artifacts to
+# dev on every merge to main, and promotes them to prod after a required reviewer
+# approves the `prod` GitHub Environment. No release branches or tags.
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'infra/**'
+      - '**/*.md'
+      - '.scratch/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+
+      # The Function App package: bundled code + host.json + production
+      # node_modules for the externals in api/package.json `dependencies`.
+      # Workspace devDependencies (e.g. @lingo-lens/shared) are already inlined
+      # by esbuild, so they are dropped before installing.
+      - name: Package Function App
+        run: |
+          mkdir -p .deploy/api
+          cp -r api/dist api/host.json api/package.json .deploy/api/
+          cd .deploy/api
+          npm pkg delete devDependencies scripts
+          npm install --omit=dev --ignore-scripts --no-audit --no-fund
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: api-package
+          path: .deploy/api
+          include-hidden-files: true
+          retention-days: 90
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: web/dist
+          retention-days: 90
+
+  dev:
+    needs: build
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/_app-deploy.yml
+    with:
+      environment: dev
+
+  prod:
+    needs: dev
+    permissions:
+      contents: read
+      id-token: write
+    uses: ./.github/workflows/_app-deploy.yml
+    with:
+      environment: prod

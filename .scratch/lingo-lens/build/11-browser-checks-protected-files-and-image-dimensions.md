@@ -6,10 +6,10 @@ Spec: [../spec.md](../spec.md) (Browser checks (category 1))
 
 **Blocked by:** [05: Image Translation: pipeline and result screen](05-image-translation-pipeline-and-result-screen.md)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
-- [ ] A `.docx`, `.xlsx` or `.pptx` whose first bytes are the OLE signature `D0 CF 11 E0`, rather than a ZIP's `PK`, is rejected inline: "This file is password-protected or encrypted. Remove the protection and try again."
-- [ ] A PDF with `/Encrypt` in its last ~64 KB gets the same rejection
-- [ ] An Image whose decoded width or height is under 50 px or over 10,000 px is rejected inline, with the `badDimensions` wording
-- [ ] Nothing is uploaded and no `/api` call is made for these rejections
-- [ ] Seam 2 tests use small fixture files for each check, including a normal docx and PDF that must pass
+- [x] A `.docx`, `.xlsx` or `.pptx` whose first bytes are the OLE signature `D0 CF 11 E0`, rather than a ZIP's `PK`, is rejected inline: "This file is password-protected or encrypted. Remove the protection and try again."
+- [x] A PDF with `/Encrypt` in its last ~64 KB gets the same rejection
+- [x] An Image whose decoded width or height is under 50 px or over 10,000 px is rejected inline, with the `badDimensions` wording
+- [x] Nothing is uploaded and no `/api` call is made for these rejections
+- [x] Seam 2 tests use small fixture files for each check, including a normal docx and PDF that must pass
