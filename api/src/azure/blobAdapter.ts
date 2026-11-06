@@ -7,6 +7,7 @@ import {
   generateBlobSASQueryParameters,
   type UserDelegationKey,
 } from '@azure/storage-blob';
+import { endpointUrl, onFirstUse } from './endpoint';
 import { AzureServiceError, type BlobPort } from './port';
 
 /** A user delegation key is reused until it is this close to expiring. */
@@ -46,9 +47,13 @@ export function createBlobAdapter(options: {
 }): BlobPort {
   // The SDK retries 429/5xx itself (the shared retry wrapper skips blobs): 3 retries,
   // exponential from 1 s, each try capped so a request stays inside SWA's 45 s.
-  const service = new BlobServiceClient(options.blobEndpoint, options.credential, {
-    retryOptions: { maxTries: 4, retryDelayInMs: 1000, maxRetryDelayInMs: 4000, tryTimeoutInMs: 8000 },
-  });
+  // Created on first use, so a missing setting fails the request, not the module load.
+  const client = onFirstUse(
+    () =>
+      new BlobServiceClient(endpointUrl('STORAGE_BLOB_ENDPOINT', options.blobEndpoint).toString(), options.credential, {
+        retryOptions: { maxTries: 4, retryDelayInMs: 1000, maxRetryDelayInMs: 4000, tryTimeoutInMs: 8000 },
+      }),
+  );
   let cachedKey: { key: UserDelegationKey; expiresOn: number } | undefined;
 
   async function delegationKey(sasExpiresOn: Date): Promise<UserDelegationKey> {
@@ -56,7 +61,7 @@ export function createBlobAdapter(options: {
     if (!cachedKey || cachedKey.expiresOn - KEY_REFRESH_MARGIN_MS < Math.max(now, sasExpiresOn.getTime())) {
       const startsOn = new Date(now - SAS_START_SKEW_MS);
       const expiresOn = new Date(Math.max(now + KEY_LIFETIME_MS, sasExpiresOn.getTime() + KEY_REFRESH_MARGIN_MS));
-      const key = await service.getUserDelegationKey(startsOn, expiresOn).catch(toAzureError);
+      const key = await client().getUserDelegationKey(startsOn, expiresOn).catch(toAzureError);
       cachedKey = { key, expiresOn: expiresOn.getTime() };
     }
     return cachedKey.key;
@@ -77,7 +82,7 @@ export function createBlobAdapter(options: {
       key,
       options.accountName,
     ).toString();
-    return `${service.getContainerClient(container).getBlobClient(path).url}?${sas}`;
+    return `${client().getContainerClient(container).getBlobClient(path).url}?${sas}`;
   }
 
   return {
@@ -88,7 +93,7 @@ export function createBlobAdapter(options: {
     async getBlob(blobName) {
       const { container, path } = split(blobName);
       try {
-        const props = await service.getContainerClient(container).getBlobClient(path).getProperties();
+        const props = await client().getContainerClient(container).getBlobClient(path).getProperties();
         return { name: blobName, sizeInBytes: props.contentLength ?? 0, createdOn: props.createdOn ?? new Date(0) };
       } catch (error) {
         if (error instanceof RestError && error.statusCode === 404) return undefined;
@@ -100,7 +105,7 @@ export function createBlobAdapter(options: {
       const { container, path } = split(prefix);
       try {
         const found = [];
-        for await (const blob of service.getContainerClient(container).listBlobsFlat({ prefix: path })) {
+        for await (const blob of client().getContainerClient(container).listBlobsFlat({ prefix: path })) {
           found.push({
             name: `${container}/${blob.name}`,
             sizeInBytes: blob.properties.contentLength ?? 0,
@@ -115,7 +120,7 @@ export function createBlobAdapter(options: {
 
     async deleteBlob(blobName) {
       const { container, path } = split(blobName);
-      await service.getContainerClient(container).getBlobClient(path).deleteIfExists().catch(toAzureError);
+      await client().getContainerClient(container).getBlobClient(path).deleteIfExists().catch(toAzureError);
     },
   };
 }

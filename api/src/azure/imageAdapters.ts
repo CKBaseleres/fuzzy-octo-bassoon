@@ -1,5 +1,6 @@
 import type { TokenCredential } from '@azure/identity';
 import type { AzureServiceName, DocumentIntelligencePort, ReadParagraph, ReadStatus, TextTranslationPort } from './port';
+import { endpointUrl } from './endpoint';
 import { failure, toErrorBody, type RawError } from './translatorAdapter';
 
 /** Document Intelligence v4.0 GA (spec: "Translation pipelines"). */
@@ -48,7 +49,10 @@ export function createDocumentIntelligenceAdapter(options: {
 }): DocumentIntelligencePort {
   const call = bearerFetch('documentIntelligence', options.credential);
   const url = (path: string, query: Record<string, string> = {}) => {
-    const u = new URL(`documentintelligence/documentModels/${path}`, options.endpoint);
+    const u = new URL(
+      `documentintelligence/documentModels/${path}`,
+      endpointUrl('DOCUMENT_INTELLIGENCE_ENDPOINT', options.endpoint),
+    );
     u.searchParams.set('api-version', DOCUMENT_INTELLIGENCE_API_VERSION);
     for (const [k, v] of Object.entries(query)) u.searchParams.set(k, v);
     return u;
@@ -104,7 +108,10 @@ export function createTextTranslateAdapter(options: {
 }): TextTranslationPort['translate'] {
   const call = bearerFetch('textTranslation', options.credential);
   return async ({ texts, targetLanguage }) => {
-    const u = new URL('translator/text/v3.0/translate', options.translatorEndpoint);
+    const u = new URL(
+      'translator/text/v3.0/translate',
+      endpointUrl('TRANSLATOR_ENDPOINT', options.translatorEndpoint),
+    );
     u.searchParams.set('api-version', '3.0');
     u.searchParams.set('to', targetLanguage);
     const results = (await (await call('POST', u, texts.map((text) => ({ text })))).json()) as {
