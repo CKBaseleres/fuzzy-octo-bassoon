@@ -3,14 +3,14 @@ import userEvent from '@testing-library/user-event';
 import { mockApi } from '../test/mockApi';
 import { renderWithProviders } from '../test/render';
 import { captureSaves } from '../test/saves';
-import { DocumentTranslation } from './DocumentTranslation';
+import { TranslationScreen } from './TranslationScreen';
 
 // Ticket 12: every message bar is a named group (its message is its name), and
 // a message that ends a Translation takes focus so a screen reader reads it.
 
 function renderScreen() {
   mockApi.languages([{ code: 'fr', name: 'French' }]);
-  return renderWithProviders(<DocumentTranslation pollIntervalMs={1} />);
+  return renderWithProviders(<TranslationScreen pollIntervalMs={1} />);
 }
 
 async function translate(file = new File(['source bytes'], 'Report.pdf')) {

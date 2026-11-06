@@ -8,12 +8,12 @@ import { failureMessage, referenceCode, type FailureAction, type FailureDetails 
  */
 export function FailureMessageBar({
   failure,
-  guid,
+  translationGuid,
   onAction,
 }: {
   failure: FailureDetails;
   /** Unknown only when the upload could not even be prepared. */
-  guid?: string;
+  translationGuid?: string;
   onAction: (action: FailureAction) => void;
 }) {
   const message = failureMessage(failure);
@@ -32,7 +32,7 @@ export function FailureMessageBar({
           {message.title && <MessageBarTitle>{message.title}</MessageBarTitle>}
           {message.text}
         </div>
-        {guid && <div>Reference: {referenceCode(guid)}</div>}
+        {translationGuid && <div>Reference: {referenceCode(translationGuid)}</div>}
       </MessageBarBody>
       {message.action && (
         <MessageBarActions>

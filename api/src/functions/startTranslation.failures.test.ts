@@ -11,7 +11,7 @@ const start = (api: TestApi) =>
   api.call(createStartTranslationHandler, {
     method: 'POST',
     path: '/api/translations',
-    body: { uploadId: UPLOAD_ID, extension: 'pdf', targetLanguage: 'fr' },
+    body: { translationGuid: UPLOAD_ID, extension: 'pdf', targetLanguage: 'fr' },
   });
 
 const failureLog = (api: TestApi) => {

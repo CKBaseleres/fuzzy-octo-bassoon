@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import photoPng from '../test/fixtures/photo-200x120.png?inline';
 import { mockApi, type RecordedRequest } from '../test/mockApi';
 import { renderWithProviders } from '../test/render';
-import { DocumentTranslation } from './DocumentTranslation';
+import { TranslationScreen } from './TranslationScreen';
 import { BAD_DIMENSIONS_MESSAGE } from './sourceFile';
 
 /** A real 200 x 120 PNG, so it passes every browser check. */
@@ -31,7 +31,7 @@ function arrangeImage(outcome: TranslationStatusResponse) {
   mockApi.startTranslation({ id: 'tr-img' });
   mockApi.translationStatus({ status: 'translating' }, outcome);
   mockApi.deleteTranslation();
-  renderWithProviders(<DocumentTranslation pollIntervalMs={1} />);
+  renderWithProviders(<TranslationScreen pollIntervalMs={1} />);
 }
 
 async function translate(file: File) {
@@ -111,7 +111,7 @@ describe("Image Translation: Can't translate", () => {
     mockApi.createUpload();
     mockApi.blobUpload();
     mockApi.startTranslationFails(502, { status: 'failed', category: 'cantTranslate', reason: 'badDimensions' });
-    renderWithProviders(<DocumentTranslation pollIntervalMs={1} />);
+    renderWithProviders(<TranslationScreen pollIntervalMs={1} />);
 
     await translate(photo());
 

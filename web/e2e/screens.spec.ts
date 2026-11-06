@@ -5,7 +5,7 @@ import { expectAccessibleAtEveryWidth } from './a11y';
 import { fakeApi, type FakeApi } from './fakeApi';
 import { encryptedPdf, photoPng, plainPdf, type PickedFile } from './files';
 
-/** `PDF_NOTE` in DocumentTranslation.tsx (not imported: that module pulls in React and Fluent). */
+/** `PDF_NOTE` in TranslationScreen.tsx (not imported: that module pulls in React and Fluent). */
 const PDF_NOTE = 'Scanned pages in mixed PDFs may stay untranslated.';
 
 /**

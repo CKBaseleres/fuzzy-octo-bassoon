@@ -1,5 +1,5 @@
 import { Title1, makeStyles, tokens } from '@fluentui/react-components';
-import { DocumentTranslation } from './translation/DocumentTranslation';
+import { TranslationScreen } from './translation/TranslationScreen';
 
 const useStyles = makeStyles({
   root: {
@@ -16,7 +16,7 @@ export function App() {
   return (
     <main className={styles.root}>
       <Title1 as="h1">Lingo Lens</Title1>
-      <DocumentTranslation />
+      <TranslationScreen />
     </main>
   );
 }

@@ -16,13 +16,13 @@ const requestUpload = (ip = '203.0.113.7', extension = 'pdf') => ({
 async function translate(api: TestApi, { ip = '203.0.113.7', extension = 'pdf', sizeInBytes = 1000 } = {}) {
   const upload = await api.call(createUploadHandler, requestUpload(ip, extension));
   if (upload.status !== 200) return upload;
-  const { uploadId, uploadUrl } = upload.json<CreateUploadResponse>();
+  const { translationGuid, uploadUrl } = upload.json<CreateUploadResponse>();
   api.azure.state.putBlob(new URL(uploadUrl).pathname.slice(1), sizeInBytes);
   return api.call(createStartTranslationHandler, {
     method: 'POST',
     path: '/api/translations',
     headers: { 'x-forwarded-for': ip },
-    body: { uploadId, extension, targetLanguage: 'fr' },
+    body: { translationGuid, extension, targetLanguage: 'fr' },
   });
 }
 
@@ -132,7 +132,7 @@ describe('what counts', () => {
       method: 'POST',
       path: '/api/translations',
       headers: { 'x-forwarded-for': '203.0.113.7' },
-      body: { uploadId: '3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b', extension: 'pdf', targetLanguage: 'fr' },
+      body: { translationGuid: '3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b', extension: 'pdf', targetLanguage: 'fr' },
     });
     expect(noFile.status).toBe(400);
 
@@ -142,7 +142,7 @@ describe('what counts', () => {
   it('refuses at start, and deletes the Source file, when the quota ran out after the upload SAS was issued', async () => {
     const api = createTestApi({ limits: { hourlyPerIpQuota: 1 } });
     const upload = await api.call(createUploadHandler, requestUpload());
-    const { uploadId, uploadUrl } = upload.json<CreateUploadResponse>();
+    const { translationGuid, uploadUrl } = upload.json<CreateUploadResponse>();
     const sourceBlob = new URL(uploadUrl).pathname.slice(1);
     api.azure.state.putBlob(sourceBlob, 1000);
     await translateTimes(api, 1);
@@ -151,7 +151,7 @@ describe('what counts', () => {
       method: 'POST',
       path: '/api/translations',
       headers: { 'x-forwarded-for': '203.0.113.7' },
-      body: { uploadId, extension: 'pdf', targetLanguage: 'fr' },
+      body: { translationGuid, extension: 'pdf', targetLanguage: 'fr' },
     });
 
     expect(response.status).toBe(429);
@@ -175,7 +175,7 @@ describe('kill switch', () => {
   it('refuses to start, and deletes the Source file, when Translations were switched off after the upload', async () => {
     const api = createTestApi({ now: '2026-11-05T12:00:00.000Z' });
     const upload = await api.call(createUploadHandler, requestUpload());
-    const { uploadId, uploadUrl } = upload.json<CreateUploadResponse>();
+    const { translationGuid, uploadUrl } = upload.json<CreateUploadResponse>();
     const sourceBlob = new URL(uploadUrl).pathname.slice(1);
     api.azure.state.putBlob(sourceBlob, 1000);
     api.deps.limits.translationsEnabled = false;
@@ -184,7 +184,7 @@ describe('kill switch', () => {
       method: 'POST',
       path: '/api/translations',
       headers: { 'x-forwarded-for': '203.0.113.7' },
-      body: { uploadId, extension: 'pdf', targetLanguage: 'fr' },
+      body: { translationGuid, extension: 'pdf', targetLanguage: 'fr' },
     });
 
     expect(response.status).toBe(429);

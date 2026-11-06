@@ -1,5 +1,5 @@
 import { Badge, Button, Switch, Text, makeStyles, mergeClasses, tokens, typographyStyles } from '@fluentui/react-components';
-import type { ImageTranslationResult, Language } from '@lingo-lens/shared';
+import type { ImageTranslationReady, Language } from '@lingo-lens/shared';
 import { useId, useState, type ReactNode, type Ref } from 'react';
 import { useBlockLinking } from './useBlockLinking';
 
@@ -226,7 +226,7 @@ const toPoints = (polygon: readonly number[]) =>
 export interface ImageResultProps {
   fileName: string;
   imageUrl: string;
-  result: ImageTranslationResult;
+  result: ImageTranslationReady;
   targetLanguage: string;
   languages: readonly Language[];
   headingRef: Ref<HTMLHeadingElement>;

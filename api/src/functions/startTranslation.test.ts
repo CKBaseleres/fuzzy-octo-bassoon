@@ -14,7 +14,7 @@ describe('POST /api/translations', () => {
 
     const response = await api.call(
       createStartTranslationHandler,
-      start({ uploadId: UPLOAD_ID, extension: 'pdf', targetLanguage: 'fr' }),
+      start({ translationGuid: UPLOAD_ID, extension: 'pdf', targetLanguage: 'fr' }),
     );
 
     expect(response.status).toBe(202);
@@ -33,7 +33,7 @@ describe('POST /api/translations', () => {
     const api = createTestApi();
     api.azure.state.putBlob(`source/${UPLOAD_ID}/file.doc`, 1000);
 
-    await api.call(createStartTranslationHandler, start({ uploadId: UPLOAD_ID, extension: 'doc', targetLanguage: 'de' }));
+    await api.call(createStartTranslationHandler, start({ translationGuid: UPLOAD_ID, extension: 'doc', targetLanguage: 'de' }));
 
     expect([...api.azure.state.batchJobs.values()][0]!.request.targetBlobName).toBe(`target/${UPLOAD_ID}/file.docx`);
   });
@@ -41,7 +41,7 @@ describe('POST /api/translations', () => {
   it('gives different Translations different ids', async () => {
     const api = createTestApi();
     api.azure.state.putBlob(`source/${UPLOAD_ID}/file.pdf`, 1000);
-    const body = { uploadId: UPLOAD_ID, extension: 'pdf', targetLanguage: 'fr' };
+    const body = { translationGuid: UPLOAD_ID, extension: 'pdf', targetLanguage: 'fr' };
 
     const a = (await api.call(createStartTranslationHandler, start(body))).json<StartTranslationResponse>();
     const b = (await api.call(createStartTranslationHandler, start(body))).json<StartTranslationResponse>();
@@ -54,7 +54,7 @@ describe('POST /api/translations', () => {
 
     const response = await api.call(
       createStartTranslationHandler,
-      start({ uploadId: UPLOAD_ID, extension: 'pdf', targetLanguage: 'fr' }),
+      start({ translationGuid: UPLOAD_ID, extension: 'pdf', targetLanguage: 'fr' }),
     );
 
     expect(response.status).toBe(400);
@@ -62,11 +62,11 @@ describe('POST /api/translations', () => {
   });
 
   it.each([
-    { uploadId: 'not-a-guid', extension: 'pdf', targetLanguage: 'fr' },
-    { uploadId: UPLOAD_ID, extension: 'exe', targetLanguage: 'fr' },
-    { uploadId: UPLOAD_ID, extension: 'pdf', targetLanguage: '' },
-    { uploadId: UPLOAD_ID, extension: 'pdf', targetLanguage: 'fr; drop' },
-    { uploadId: UPLOAD_ID, extension: 'pdf' },
+    { translationGuid: 'not-a-translationGuid', extension: 'pdf', targetLanguage: 'fr' },
+    { translationGuid: UPLOAD_ID, extension: 'exe', targetLanguage: 'fr' },
+    { translationGuid: UPLOAD_ID, extension: 'pdf', targetLanguage: '' },
+    { translationGuid: UPLOAD_ID, extension: 'pdf', targetLanguage: 'fr; drop' },
+    { translationGuid: UPLOAD_ID, extension: 'pdf' },
   ])('rejects a malformed request %j', async (body) => {
     const api = createTestApi();
     api.azure.state.putBlob(`source/${UPLOAD_ID}/file.pdf`, 1000);
@@ -84,7 +84,7 @@ describe('POST /api/translations', () => {
 
     await api.call(
       createStartTranslationHandler,
-      start({ uploadId: UPLOAD_ID, extension: 'xlsx', targetLanguage: 'ja' }),
+      start({ translationGuid: UPLOAD_ID, extension: 'xlsx', targetLanguage: 'ja' }),
     );
 
     expect(api.logs).toContainEqual({

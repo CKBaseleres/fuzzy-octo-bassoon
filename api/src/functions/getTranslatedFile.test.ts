@@ -22,7 +22,7 @@ describe('GET /api/translations/{id}/file', () => {
     expect(body.expiresOn).toBe('2026-11-05T10:08:00.000Z');
     expect(body.extension).toBe('pdf');
     const url = new URL(body.url);
-    expect(url.pathname).toBe(`/target/${t.guid}/file.pdf`);
+    expect(url.pathname).toBe(`/target/${t.translationGuid}/file.pdf`);
     expect(url.searchParams.get('sp')).toBe('r');
   });
 
@@ -34,7 +34,7 @@ describe('GET /api/translations/{id}/file', () => {
     const body = (await getFile(api, t.id)).json<TranslatedFileResponse>();
 
     expect(body.extension).toBe('pptx');
-    expect(new URL(body.url).pathname).toBe(`/target/${t.guid}/file.pptx`);
+    expect(new URL(body.url).pathname).toBe(`/target/${t.translationGuid}/file.pptx`);
   });
 
   it('answers 404 while there is no Translated file', async () => {

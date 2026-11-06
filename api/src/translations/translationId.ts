@@ -13,7 +13,7 @@ import { GUID_PATTERN } from './http';
 export interface TranslationRef {
   kind: 'document' | 'image';
   /** Our GUID; names every blob of the Translation. */
-  guid: string;
+  translationGuid: string;
   /** Source file extension (lower case). */
   extension: string;
   /** Azure's operation id (batch job id, or analyze result id). */
@@ -46,7 +46,7 @@ export function encodeTranslationId(ref: TranslationRef): string {
   const wire: Wire = {
     v: 1,
     k: ref.kind === 'document' ? 'd' : 'i',
-    g: ref.guid,
+    g: ref.translationGuid,
     e: ref.extension,
     o: ref.operationId,
     s: ref.startedAt.getTime(),
@@ -75,7 +75,7 @@ export function decodeTranslationId(id: string | undefined): TranslationRef | un
   if (k === 'i' && t === undefined) return undefined;
   return {
     kind: k === 'd' ? 'document' : 'image',
-    guid: g,
+    translationGuid: g,
     extension: e,
     operationId: o,
     startedAt: new Date(s),

@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { FAKE_BLOB_ORIGIN, mockApi, type RecordedRequest } from '../test/mockApi';
 import { renderWithProviders } from '../test/render';
 import { captureSaves } from '../test/saves';
-import { DocumentTranslation } from './DocumentTranslation';
+import { TranslationScreen } from './TranslationScreen';
 
 const GUID = '3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b';
 const SECOND_GUID = '9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a';
@@ -16,7 +16,7 @@ function fileOf(name: string) {
 
 function renderScreen() {
   mockApi.languages([{ code: 'fr', name: 'French' }]);
-  return renderWithProviders(<DocumentTranslation pollIntervalMs={1} />);
+  return renderWithProviders(<TranslationScreen pollIntervalMs={1} />);
 }
 
 /** Everything up to the polls answers successfully; the test arranges the rest. */
@@ -89,8 +89,8 @@ describe('Document Translation failures: retrying', () => {
     ]);
     const starts = requests.filter((r) => r.method === 'POST' && r.url === '/api/translations');
     expect(starts.map((r) => JSON.parse(r.body) as unknown)).toEqual([
-      { uploadId: GUID, extension: 'pdf', targetLanguage: 'fr' },
-      { uploadId: SECOND_GUID, extension: 'pdf', targetLanguage: 'fr' },
+      { translationGuid: GUID, extension: 'pdf', targetLanguage: 'fr' },
+      { translationGuid: SECOND_GUID, extension: 'pdf', targetLanguage: 'fr' },
     ]);
   });
 

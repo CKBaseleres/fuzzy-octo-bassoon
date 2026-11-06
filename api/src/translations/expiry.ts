@@ -6,8 +6,8 @@ import { blobPrefixes } from './blobNames';
 export const EXPIRED: TranslationStatusResponse = { status: 'failed', category: 'expired' };
 
 /** True when no blob of this Translation is left in `source/` or `target/`. Works for Documents and Images. */
-export async function blobsGone(blobs: BlobPort, guid: string): Promise<boolean> {
-  const listings = await Promise.all(blobPrefixes(guid).map((prefix) => blobs.listBlobs(prefix)));
+export async function blobsGone(blobs: BlobPort, translationGuid: string): Promise<boolean> {
+  const listings = await Promise.all(blobPrefixes(translationGuid).map((prefix) => blobs.listBlobs(prefix)));
   return listings.every((listing) => listing.length === 0);
 }
 

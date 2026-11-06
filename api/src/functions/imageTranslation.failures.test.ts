@@ -82,14 +82,14 @@ describe('Image Translation: Document Intelligence could not read the Image', ()
         }),
       );
     const upload = await api.call(createUploadHandler, { method: 'POST', path: '/api/translations/uploads', body: { extension: 'png' } });
-    const { uploadId, uploadUrl } = upload.json<{ uploadId: string; uploadUrl: string }>();
+    const { translationGuid, uploadUrl } = upload.json<{ translationGuid: string; uploadUrl: string }>();
     const blobName = new URL(uploadUrl).pathname.slice(1);
     api.azure.state.putBlob(blobName, 300_000);
 
     const response = await api.call(createStartTranslationHandler, {
       method: 'POST',
       path: '/api/translations',
-      body: { uploadId, extension: 'png', targetLanguage: 'fr' },
+      body: { translationGuid, extension: 'png', targetLanguage: 'fr' },
     });
 
     expect(response.status).toBe(502);

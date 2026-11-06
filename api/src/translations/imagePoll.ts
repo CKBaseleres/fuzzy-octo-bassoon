@@ -29,11 +29,11 @@ export async function pollImageTranslation(
   context: InvocationContext,
 ): Promise<TranslationStatusResponse> {
   const durationMs = clock.now().getTime() - ref.startedAt.getTime();
-  const logBase: TranslationLogFields = { translationGuid: ref.guid, format: ref.extension, durationMs };
+  const logBase: TranslationLogFields = { translationGuid: ref.translationGuid, format: ref.extension, durationMs };
 
   /** Deletes what Azure still holds. Delete Analyze Result is best effort: Azure purges it within 24 h anyway. */
   const cleanUp = async () => {
-    await azure.blobs.deleteBlob(sourceBlobName(ref.guid, ref.extension));
+    await azure.blobs.deleteBlob(sourceBlobName(ref.translationGuid, ref.extension));
     try {
       await azure.documentIntelligence.deleteReadResult(ref.operationId);
     } catch (error) {
@@ -67,7 +67,7 @@ export async function pollImageTranslation(
   }
 
   if (read.status !== 'succeeded' || !read.result) {
-    logEvent(context, 'translation.jobEnded', { ...logBase, jobStatus: read.status });
+    logEvent(context, 'translation.batchEnded', { ...logBase, jobStatus: read.status });
     return fail(
       {
         service: 'documentIntelligence',
@@ -81,7 +81,7 @@ export async function pollImageTranslation(
   }
 
   if (!hasText(read.result)) {
-    logEvent(context, 'translation.jobEnded', { ...logBase, jobStatus: read.status });
+    logEvent(context, 'translation.batchEnded', { ...logBase, jobStatus: read.status });
     return fail({ service: 'documentIntelligence', scope: 'job', jobStatus: read.status });
   }
 
@@ -89,7 +89,7 @@ export async function pollImageTranslation(
   try {
     paragraphs = await translateParagraphs(azure, read.result, ref.targetLanguage);
   } catch (error) {
-    logEvent(context, 'translation.jobEnded', { ...logBase, jobStatus: read.status });
+    logEvent(context, 'translation.batchEnded', { ...logBase, jobStatus: read.status });
     if (error instanceof AzureServiceError) return fail(requestFailureInput(error, 'translate'), error);
     // E.g. Translator answered fewer results than texts: still no partial result.
     const message = error instanceof Error ? error.message : String(error);
@@ -98,7 +98,7 @@ export async function pollImageTranslation(
 
   await cleanUp();
   const detectedLanguage = mostCommonLanguage(paragraphs);
-  logEvent(context, 'translation.jobEnded', {
+  logEvent(context, 'translation.batchEnded', {
     ...logBase,
     jobStatus: read.status,
     ...(detectedLanguage ? { detectedLanguage } : {}),

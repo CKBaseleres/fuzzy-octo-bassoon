@@ -82,4 +82,4 @@ export const FAILURE_MESSAGES: { [C in FailureCategory]: (details: FailureDetail
 export const failureMessage = (details: FailureDetails): FailureMessage => FAILURE_MESSAGES[details.category](details);
 
 /** "Reference: <first 8 characters of the GUID>". */
-export const referenceCode = (guid: string) => guid.slice(0, 8);
+export const referenceCode = (translationGuid: string) => translationGuid.slice(0, 8);

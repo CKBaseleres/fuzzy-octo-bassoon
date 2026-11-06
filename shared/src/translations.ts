@@ -81,14 +81,14 @@ export interface LanguagesResponse {
 
 // --- POST /api/translations/uploads ------------------------------------------
 
-export interface CreateUploadRequest {
+export interface CreateUploadBody {
   /** The Source file's extension, lower case, without the dot. The filename itself never leaves the browser. */
   extension: string;
 }
 
 export interface CreateUploadResponse {
   /** Server-generated GUID naming the Source file blob. */
-  uploadId: string;
+  translationGuid: string;
   /** Write-only user delegation SAS URL for exactly one blob. The browser `PUT`s the file here. */
   uploadUrl: string;
   /** ISO 8601. */
@@ -97,8 +97,8 @@ export interface CreateUploadResponse {
 
 // --- POST /api/translations ----------------------------------------------------
 
-export interface StartTranslationRequest {
-  uploadId: string;
+export interface StartTranslationBody {
+  translationGuid: string;
   extension: string;
   /** Translator language code. The source language is auto-detected. */
   targetLanguage: string;
@@ -133,7 +133,7 @@ export interface ImageParagraph {
 }
 
 /** The result of an Image Translation. Azure keeps none of it. */
-export interface ImageTranslationResult {
+export interface ImageTranslationReady {
   /** The analysed page's size in pixels. */
   page: { width: number; height: number };
   /** In reading order. Empty when no text was found (ticket 10 turns that into `noTextFound`). */
@@ -147,7 +147,7 @@ export interface ImageTranslationResult {
 export type TranslationStatusResponse =
   | { status: 'translating' }
   | { status: 'ready'; kind: 'document' }
-  | ({ status: 'ready'; kind: 'image' } & ImageTranslationResult)
+  | ({ status: 'ready'; kind: 'image' } & ImageTranslationReady)
   | { status: 'failed'; category: FailureCategory; reason?: FailureReason };
 
 /**

@@ -29,7 +29,7 @@ describe('Image Translation: POST /api/translations', () => {
 
     const response = await api.call(
       createStartTranslationHandler,
-      start({ uploadId: UPLOAD_ID, extension: 'jpg', targetLanguage: 'fr' }),
+      start({ translationGuid: UPLOAD_ID, extension: 'jpg', targetLanguage: 'fr' }),
     );
 
     expect(response.status).toBe(202);
@@ -186,8 +186,8 @@ describe('Image Translation: GET /api/translations/{id}', () => {
     expect(api.logs).toContainEqual({
       level: 'information',
       args: [
-        'translation.jobEnded',
-        { translationGuid: t.guid, format: 'png', jobStatus: 'succeeded', detectedLanguage: 'fr', durationMs: 4_000 },
+        'translation.batchEnded',
+        { translationGuid: t.translationGuid, format: 'png', jobStatus: 'succeeded', detectedLanguage: 'fr', durationMs: 4_000 },
       ],
     });
     const logged = JSON.stringify(api.logs);

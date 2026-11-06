@@ -81,8 +81,8 @@ describe('GET /api/translations/{id}', () => {
     expect(api.logs).toContainEqual({
       level: 'information',
       args: [
-        'translation.jobEnded',
-        { translationGuid: t.guid, format: 'docx', jobStatus: 'Succeeded', durationMs: 42_000 },
+        'translation.batchEnded',
+        { translationGuid: t.translationGuid, format: 'docx', jobStatus: 'Succeeded', durationMs: 42_000 },
       ],
     });
     expect(JSON.stringify(api.logs)).not.toMatch(/https?:|sig=/);

@@ -2,7 +2,7 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockApi } from '../test/mockApi';
 import { renderWithProviders } from '../test/render';
-import { DocumentTranslation, PDF_NOTE } from './DocumentTranslation';
+import { TranslationScreen, PDF_NOTE } from './TranslationScreen';
 import encryptedDocx from '../test/fixtures/encrypted.docx?inline';
 import encryptedPdf from '../test/fixtures/encrypted.pdf?inline';
 import plainDocx from '../test/fixtures/plain.docx?inline';
@@ -29,7 +29,7 @@ function fixture(dataUrl: string, name: string) {
 async function pick(file: File) {
   mockApi.languages([{ code: 'fr', name: 'French' }]);
   const requests = mockApi.recordRequests();
-  renderWithProviders(<DocumentTranslation pollIntervalMs={1} />);
+  renderWithProviders(<TranslationScreen pollIntervalMs={1} />);
   const user = userEvent.setup({ applyAccept: false });
   await user.upload(screen.getByLabelText('File to translate'), file);
   await user.selectOptions(

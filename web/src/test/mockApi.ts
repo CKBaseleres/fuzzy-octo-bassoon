@@ -59,16 +59,16 @@ export const mockApi = {
    * Pass several upload ids to hand out a new GUID per call (the last one repeats).
    */
   createUpload(body: Partial<CreateUploadResponse> = {}, ...moreUploadIds: string[]) {
-    const ids = [body.uploadId ?? '3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b', ...moreUploadIds];
+    const ids = [body.translationGuid ?? '3f2b8c1e-9a4d-4e6f-8b7a-1c2d3e4f5a6b', ...moreUploadIds];
     let i = 0;
     server.use(
       http.post<never, never, CreateUploadResponse>('/api/translations/uploads', () => {
-        const uploadId = ids[Math.min(i++, ids.length - 1)]!;
+        const translationGuid = ids[Math.min(i++, ids.length - 1)]!;
         return HttpResponse.json({
-          uploadUrl: `${FAKE_BLOB_ORIGIN}/source/${uploadId}/file.bin?sp=cw&sig=fake`,
+          uploadUrl: `${FAKE_BLOB_ORIGIN}/source/${translationGuid}/file.bin?sp=cw&sig=fake`,
           expiresOn: '2030-01-01T00:00:00.000Z',
           ...body,
-          uploadId,
+          translationGuid,
         });
       }),
     );
@@ -142,7 +142,7 @@ export const mockApi = {
         const answer = all[Math.min(i++, all.length - 1)]!;
         if (isFailure(answer)) return new HttpResponse(null, { status: answer.httpStatus });
         return HttpResponse.json({
-          url: `${FAKE_BLOB_ORIGIN}/target/guid/file.pdf?sp=r&sig=fake`,
+          url: `${FAKE_BLOB_ORIGIN}/target/translationGuid/file.pdf?sp=r&sig=fake`,
           expiresOn: '2030-01-01T00:00:00.000Z',
           extension: 'pdf',
           ...answer,

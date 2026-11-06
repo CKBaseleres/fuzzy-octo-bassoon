@@ -9,7 +9,7 @@ export interface StartedImageTranslation {
   /** The opaque Translation id the SPA holds. */
   id: string;
   /** Our GUID (the upload id). */
-  guid: string;
+  translationGuid: string;
   sourceBlobName: string;
   /** Document Intelligence's analyze result id. */
   operationId: string;
@@ -32,14 +32,14 @@ export async function startImageTranslation(
     path: '/api/translations/uploads',
     body: { extension },
   });
-  const { uploadId, uploadUrl } = upload.json<CreateUploadResponse>();
+  const { translationGuid, uploadUrl } = upload.json<CreateUploadResponse>();
   const sourceBlobName = new URL(uploadUrl).pathname.slice(1);
   api.azure.state.putBlob(sourceBlobName, sizeInBytes);
 
   const started = await api.call(createStartTranslationHandler, {
     method: 'POST',
     path: '/api/translations',
-    body: { uploadId, extension, targetLanguage },
+    body: { translationGuid, extension, targetLanguage },
   });
   if (started.status !== 202) throw new Error(`start responded ${started.status}`);
   const { id } = started.json<StartTranslationResponse>();
@@ -47,7 +47,7 @@ export async function startImageTranslation(
 
   return {
     id,
-    guid: uploadId,
+    translationGuid,
     sourceBlobName,
     operationId,
     read,

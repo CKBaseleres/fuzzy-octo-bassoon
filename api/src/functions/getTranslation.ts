@@ -33,7 +33,7 @@ export const createGetTranslationHandler: HttpHandlerFactory =
       return { status: 200, jsonBody: status };
     }
     const logBase = {
-      translationGuid: ref.guid,
+      translationGuid: ref.translationGuid,
       format: ref.extension,
       durationMs: clock.now().getTime() - ref.startedAt.getTime(),
     };
@@ -51,15 +51,15 @@ export const createGetTranslationHandler: HttpHandlerFactory =
       return { status: 200, jsonBody: failedResponse(classification) };
     }
 
-    if (expiresWhenBlobsGone(batch.status) && (await blobsGone(azure.blobs, ref.guid))) {
+    if (expiresWhenBlobsGone(batch.status) && (await blobsGone(azure.blobs, ref.translationGuid))) {
       return { status: 200, jsonBody: EXPIRED };
     }
 
     if (isTerminal(batch.status)) {
-      const source = sourceBlobName(ref.guid, ref.extension);
+      const source = sourceBlobName(ref.translationGuid, ref.extension);
       if (await azure.blobs.getBlob(source)) {
         await azure.blobs.deleteBlob(source);
-        logEvent(context, 'translation.jobEnded', { ...logBase, jobStatus: batch.status });
+        logEvent(context, 'translation.batchEnded', { ...logBase, jobStatus: batch.status });
       }
     }
 

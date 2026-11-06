@@ -3,7 +3,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { mockApi } from '../test/mockApi';
 import { renderWithProviders } from '../test/render';
-import { DocumentTranslation } from './DocumentTranslation';
+import { TranslationScreen } from './TranslationScreen';
 
 const LANGUAGES = [
   { code: 'en', name: 'English' },
@@ -41,7 +41,7 @@ function fileOf(name: string, size = 1024, type = '') {
 
 function renderScreen() {
   mockApi.languages(LANGUAGES);
-  return renderWithProviders(<DocumentTranslation pollIntervalMs={1} />);
+  return renderWithProviders(<TranslationScreen pollIntervalMs={1} />);
 }
 
 const fileInput = () => screen.getByLabelText('File to translate');

@@ -163,7 +163,7 @@ describe('GET /api/translations/{id}: classifying a failed Document', () => {
     expect(log).toEqual({
       level: 'error',
       fields: {
-        translationGuid: t.guid,
+        translationGuid: t.translationGuid,
         format: 'docx',
         durationMs: 30_000,
         category: 'cantTranslate',
