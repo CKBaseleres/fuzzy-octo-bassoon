@@ -8,7 +8,7 @@ import { failedResponse } from './documentStatus';
 import { EXPIRED, isUnknownOperation } from './expiry';
 import { hasText, isReadTerminal, mostCommonLanguage, translateParagraphs } from './imageStatus';
 import { logEvent, logFailure, type TranslationLogFields } from './log';
-import type { TranslationRef } from './translationId';
+import type { ImageTranslationRef } from './translationId';
 
 /**
  * One poll of an Image Translation (spec: "API contract", "Error classification").
@@ -25,7 +25,7 @@ import type { TranslationRef } from './translationId';
  */
 export async function pollImageTranslation(
   { azure, clock, timeouts }: Deps,
-  ref: TranslationRef & { targetLanguage: string },
+  ref: ImageTranslationRef,
   context: InvocationContext,
 ): Promise<TranslationStatusResponse> {
   const durationMs = clock.now().getTime() - ref.startedAt.getTime();

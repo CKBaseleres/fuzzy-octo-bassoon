@@ -70,13 +70,13 @@ export const createStartTranslationHandler: HttpHandlerFactory =
     if (refusal) return refusal;
 
     const startedAt = clock.now();
-    const logStarted = () =>
-      logEvent(context, 'translation.started', {
-        translationGuid,
-        format: extension,
-        sizeInBytes: blob.sizeInBytes,
-        targetLanguage,
-      });
+    const logBase: TranslationLogFields = {
+      translationGuid,
+      format: extension,
+      sizeInBytes: blob.sizeInBytes,
+      targetLanguage,
+    };
+    const logStarted = () => logEvent(context, 'translation.started', logBase);
 
     if (isImageExtension(extension)) {
       // Document Intelligence reads the Image itself, through a short-lived read-only SAS.
@@ -86,12 +86,7 @@ export const createStartTranslationHandler: HttpHandlerFactory =
         ({ operationId } = await azure.documentIntelligence.startRead({ sourceUrl }));
       } catch (error) {
         if (!(error instanceof AzureServiceError)) throw error;
-        return submitFailed(error, 'startRead', source, {
-          translationGuid,
-          format: extension,
-          sizeInBytes: blob.sizeInBytes,
-          targetLanguage,
-        });
+        return submitFailed(error, 'startRead', source, logBase);
       }
       logStarted();
       const id = encodeTranslationId({ kind: 'image', translationGuid, extension, operationId, startedAt, targetLanguage });
@@ -108,12 +103,7 @@ export const createStartTranslationHandler: HttpHandlerFactory =
       }));
     } catch (error) {
       if (!(error instanceof AzureServiceError)) throw error;
-      return submitFailed(error, 'startBatch', source, {
-        translationGuid,
-        format: extension,
-        sizeInBytes: blob.sizeInBytes,
-        targetLanguage,
-      });
+      return submitFailed(error, 'startBatch', source, logBase);
     }
 
     logStarted();

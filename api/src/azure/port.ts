@@ -2,16 +2,17 @@
  * The Azure services port: the ONE seam between the backend and Azure.
  *
  * Every Azure call a handler makes goes through `AzureServices`. Production wires
- * a real adapter (later tickets); tests wire `createFakeAzureServices()` from
- * `src/testing/fakeAzureServices.ts`. Do not add a second seam: grow this one.
+ * the real adapters (`azureServices.ts`, wrapped by `withRetries` in `index.ts`);
+ * tests wire `createFakeAzureServices()` from `src/testing/fakeAzureServices.ts`.
+ * Do not add a second seam: grow this one.
  *
  * Growing it: add a method to the relevant sub-port here, implement it in the
  * real adapter, and give the fake an in-memory default plus a `script` entry so
  * tests can make it return statuses or throw `AzureServiceError`s.
  *
  * The shapes below mirror the Azure REST payloads the spec relies on, trimmed to
- * the fields the backend reads. Nothing calls most of them yet; later tickets may
- * rename or reshape them freely, as long as port, adapter and fake move together.
+ * the fields the backend reads. Reshape them freely, as long as port, adapter and
+ * fake move together.
  */
 export interface AzureServices {
   /** Translator batch Document Translation (GA 2026-03-01). */

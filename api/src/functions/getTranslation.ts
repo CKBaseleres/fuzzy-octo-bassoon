@@ -28,8 +28,7 @@ export const createGetTranslationHandler: HttpHandlerFactory =
     const ref = decodeTranslationId(request.params.id);
     if (!ref) return notFound();
     if (ref.kind === 'image') {
-      if (!ref.targetLanguage) return notFound();
-      const status = await pollImageTranslation(deps, { ...ref, targetLanguage: ref.targetLanguage }, context);
+      const status = await pollImageTranslation(deps, ref, context);
       return { status: 200, jsonBody: status };
     }
     const logBase = {
