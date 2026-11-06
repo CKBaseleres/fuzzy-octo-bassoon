@@ -35,7 +35,7 @@ export interface TranslationErrorLogFields extends TranslationLogFields {
   documentStatus?: string;
   /** Azure's `apim-request-id` / `X-RequestId`. */
   requestId?: string;
-  /** Azure's message, SAS parameters scrubbed, at most 300 characters. */
+  /** Azure's message, URLs and SAS parameters redacted, at most 300 characters. */
   message?: string;
 }
 
@@ -75,10 +75,16 @@ const MAX_MESSAGE_LENGTH = 300;
 const SAS_PARAMETER =
   /\b(sig|se|st|sp|sv|sr|spr|skoid|sktid|skt|ske|sks|skv|sdd|ss|srt|sip|saoid|suoid|scid)=[^&\s"']*/gi;
 
-/** Removes SAS parameter values (so any signature) and truncates to 300 characters. */
+/** Any https URL, up to whitespace, a quote or a closing bracket. */
+const HTTPS_URL = /https:\/\/[^\s"'<>()[\]{}]+/gi;
+
+/**
+ * Replaces every https URL (blob names, SAS, endpoints) with `REDACTED_URL`,
+ * removes any SAS parameter values left outside a URL, and truncates to 300 characters.
+ */
 export function scrubMessage(message: string | undefined): string | undefined {
   if (!message) return undefined;
-  return message.replace(SAS_PARAMETER, '$1=REDACTED').slice(0, MAX_MESSAGE_LENGTH);
+  return message.replace(HTTPS_URL, 'REDACTED_URL').replace(SAS_PARAMETER, '$1=REDACTED').slice(0, MAX_MESSAGE_LENGTH);
 }
 
 /** Logs a failed Translation as `translation.failed`, at the level the classifier chose. */

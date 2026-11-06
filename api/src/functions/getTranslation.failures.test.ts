@@ -146,11 +146,11 @@ describe('GET /api/translations/{id}: classifying a failed Document', () => {
     expect(failureLog(api)).toBeUndefined();
   });
 
-  it('logs every error field, scrubbing SAS parameters from the message and cutting it to 300 characters', async () => {
+  it('logs every error field, redacting URLs and SAS parameters in the message and cutting it to 300 characters', async () => {
     const api = createTestApi({ now: '2026-11-05T09:00:00.000Z' });
     const t = await startDocumentTranslation(api, { extension: 'docx' });
     api.clock.advance(30_000);
-    const message = `Cannot read https://st.blob.core.windows.net/source/${'x'.repeat(10)}/file.docx?sv=2024-11-04&se=2026-11-05&sp=r&sig=SECRETSIG ${'y'.repeat(400)}`;
+    const message = `Cannot read https://st.blob.core.windows.net/source/${'x'.repeat(10)}/file.docx?sv=2024-11-04&se=2026-11-05&sp=r&sig=SECRETSIG (see https://trl-x.cognitiveservices.azure.com/translator/document/batches/op-1), sig=LOOSESIG ${'y'.repeat(400)}`;
     Object.assign(t.job, {
       status: 'Failed',
       requestId: 'req-123',
@@ -180,9 +180,8 @@ describe('GET /api/translations/{id}: classifying a failed Document', () => {
     });
     const logged = log!.fields.message as string;
     expect(logged).toHaveLength(300);
-    expect(logged).toContain('Cannot read https://st.blob.core.windows.net/source/');
-    expect(logged).not.toMatch(/SECRETSIG|2024-11-04/);
-    expect(logged).toContain('sig=REDACTED');
+    expect(logged).toMatch(/^Cannot read REDACTED_URL \(see REDACTED_URL\), sig=REDACTED y/);
+    expect(logged).not.toMatch(/https:|blob\.core|cognitiveservices|file\.docx|SECRETSIG|LOOSESIG|2024-11-04/);
   });
 
   // (A 404 means the job is unknown: Expired, ticket 07.)
