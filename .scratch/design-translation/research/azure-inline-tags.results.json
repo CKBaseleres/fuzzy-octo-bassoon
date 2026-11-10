@@ -1,0 +1,2135 @@
+{
+ "strings": [
+  {
+   "name": "one styled word",
+   "src": "Get <span id=\"1\">30% off</span> every lamp this week.",
+   "v3": {
+    "fr": {
+     "text": "Obtenez <span id=\"1\">30 % de réduction</span> sur chaque lampe cette semaine.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "it": {
+     "text": "Ottieni <span id=\"1\">il 30% di sconto</span> su ogni lampada questa settimana.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "pt": {
+     "text": "Tenha <span id=\"1\">30% de desconto</span> em cada abajur esta semana.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "es": {
+     "text": "Consigue <span id=\"1\">un 30% de descuento</span> en cada lámpara esta semana.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "ja": {
+     "text": "今週は全ランプが <span id=\"1\">30%オフ</span> です。",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    }
+   },
+   "v2026": {
+    "fr": {
+     "text": "Obtenez <span id=\"1\">30 % de réduction</span> sur chaque lampe cette semaine.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "it": {
+     "text": "Ottieni <span id=\"1\">il 30% di sconto</span> su ogni lampada questa settimana.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "pt": {
+     "text": "Tenha <span id=\"1\">30% de desconto</span> em cada abajur esta semana.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "es": {
+     "text": "Consigue <span id=\"1\">un 30% de descuento</span> en cada lámpara esta semana.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "ja": {
+     "text": "今週は全ランプが <span id=\"1\">30%オフ</span> です。",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    }
+   }
+  },
+  {
+   "name": "adjective and noun, may swap",
+   "src": "The <span id=\"1\">perfect</span> <span id=\"2\">light</span> for your desk.",
+   "v3": {
+    "fr": {
+     "text": "La <span id=\"1\">lumière parfaite</span> <span id=\"2\"></span> pour votre bureau.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "it": {
+     "text": "La <span id=\"2\">luce</span> <span id=\"1\">perfetta</span> per la tua scrivania.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": false,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "pt": {
+     "text": "A <span id=\"2\">luz</span> <span id=\"1\">perfeita</span> para sua mesa.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": false,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "es": {
+     "text": "La <span id=\"2\">luz</span> <span id=\"1\">perfecta</span> para tu escritorio.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": false,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "ja": {
+     "text": "机に <span id=\"1\">ぴったり</span>の <span id=\"2\">ライト</span> 。",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    }
+   },
+   "v2026": {
+    "fr": {
+     "text": "La <span id=\"1\">lumière parfaite</span> <span id=\"2\"></span> pour votre bureau.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "it": {
+     "text": "La <span id=\"2\">luce</span> <span id=\"1\">perfetta</span> per la tua scrivania.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": false,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "pt": {
+     "text": "A <span id=\"2\">luz</span> <span id=\"1\">perfeita</span> para sua mesa.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": false,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "es": {
+     "text": "La <span id=\"2\">luz</span> <span id=\"1\">perfecta</span> para tu escritorio.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": false,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "ja": {
+     "text": "机に <span id=\"1\">ぴったり</span>の <span id=\"2\">ライト</span> 。",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    }
+   }
+  },
+  {
+   "name": "two stretches",
+   "src": "A <span id=\"1\">bright</span> idea for <span id=\"2\">small rooms</span>.",
+   "v3": {
+    "fr": {
+     "text": "Une <span id=\"1\">idée brillante</span> pour de <span id=\"2\">petites pièces</span>.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "it": {
+     "text": "<span id=\"1\">Un'idea brillante</span> per <span id=\"2\">stanze piccole</span>.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "pt": {
+     "text": "Uma <span id=\"1\">ideia brilhante</span> para <span id=\"2\">quartos pequenos</span>.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "es": {
+     "text": "Una <span id=\"1\">idea brillante</span> para <span id=\"2\">habitaciones pequeñas</span>.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "ja": {
+     "text": "<span id=\"2\">小さな部屋</span>にぴ<span id=\"1\">ったりのアイデア</span>ですね。",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": false,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    }
+   },
+   "v2026": {
+    "fr": {
+     "text": "Une <span id=\"1\">idée brillante</span> pour de <span id=\"2\">petites pièces</span>.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "it": {
+     "text": "<span id=\"1\">Un'idea brillante</span> per <span id=\"2\">stanze piccole</span>.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "pt": {
+     "text": "Uma <span id=\"1\">ideia brilhante</span> para <span id=\"2\">quartos pequenos</span>.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "es": {
+     "text": "Una <span id=\"1\">idea brillante</span> para <span id=\"2\">habitaciones pequeñas</span>.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "ja": {
+     "text": "<span id=\"2\">小さな部屋</span>にぴ<span id=\"1\">ったりのアイデア</span>ですね。",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": false,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    }
+   }
+  },
+  {
+   "name": "whole sentence in a stretch",
+   "src": "<span id=\"1\">New colours.</span> Same great light.",
+   "v3": {
+    "fr": {
+     "text": "<span id=\"1\">De nouvelles couleurs.</span> La même grande lumière.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "it": {
+     "text": "<span id=\"1\">Nuovi colori.</span> Stessa grande luce.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "pt": {
+     "text": "<span id=\"1\">Novas cores.</span> Mesma luz incrível.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "es": {
+     "text": "<span id=\"1\">Nuevos colores.</span> La misma gran luz.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "ja": {
+     "text": "<span id=\"1\">新しい色。</span> 同じ素晴らしい光。",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    }
+   },
+   "v2026": {
+    "fr": {
+     "text": "<span id=\"1\">De nouvelles couleurs.</span> La même grande lumière.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "it": {
+     "text": "<span id=\"1\">Nuovi colori.</span> Stessa grande luce.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "pt": {
+     "text": "<span id=\"1\">Novas cores.</span> Mesma luz incrível.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "es": {
+     "text": "<span id=\"1\">Nuevos colores.</span> La misma gran luz.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "ja": {
+     "text": "<span id=\"1\">新しい色。</span> 同じ素晴らしい光。",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    }
+   }
+  },
+  {
+   "name": "nested spans",
+   "src": "Order today and <span id=\"1\">get <span id=\"2\">free</span> delivery</span>.",
+   "v3": {
+    "fr": {
+     "text": "Commandez dès aujourd’hui et <span id=\"1\">bénéficiez <span id=\"2\">de</span> la livraison gratuite</span>.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "it": {
+     "text": "Ordina oggi stesso e <span id=\"1\">ricevi la consegna <span id=\"2\">gratuita</span></span>.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "pt": {
+     "text": "Faça o pedido hoje e <span id=\"1\">receba <span id=\"2\">entrega gratuita</span></span>.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "es": {
+     "text": "Pide hoy y <span id=\"1\">recibe entrega <span id=\"2\">gratuita</span></span>.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "ja": {
+     "text": "今すぐご注文すれば <span id=\"1\">、送料 <span id=\"2\">無料</span> です</span>。",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    }
+   },
+   "v2026": {
+    "fr": {
+     "text": "Commandez dès aujourd’hui et <span id=\"1\">bénéficiez <span id=\"2\">de</span> la livraison gratuite</span>.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "it": {
+     "text": "Ordina oggi stesso e <span id=\"1\">ricevi la consegna <span id=\"2\">gratuita</span></span>.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "pt": {
+     "text": "Faça o pedido hoje e <span id=\"1\">receba <span id=\"2\">entrega gratuita</span></span>.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "es": {
+     "text": "Pide hoy y <span id=\"1\">recibe entrega <span id=\"2\">gratuita</span></span>.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "ja": {
+     "text": "今すぐご注文すれば <span id=\"1\">、送料 <span id=\"2\">無料</span> です</span>。",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    }
+   }
+  },
+  {
+   "name": "short string",
+   "src": "<span id=\"1\">Free</span> delivery",
+   "v3": {
+    "fr": {
+     "text": "Livraison <span id=\"1\">gratuite</span>",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "it": {
+     "text": "Consegna <span id=\"1\">gratuita</span>",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "pt": {
+     "text": "Entrega <span id=\"1\">gratuita</span>",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "es": {
+     "text": "<span id=\"1\">Entrega gratuita</span>",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "ja": {
+     "text": "<span id=\"1\">無料</span> 配送",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    }
+   },
+   "v2026": {
+    "fr": {
+     "text": "Livraison <span id=\"1\">gratuite</span>",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "it": {
+     "text": "Consegna <span id=\"1\">gratuita</span>",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "pt": {
+     "text": "Entrega <span id=\"1\">gratuita</span>",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "es": {
+     "text": "<span id=\"1\">Entrega gratuita</span>",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "ja": {
+     "text": "<span id=\"1\">無料</span> 配送",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    }
+   }
+  },
+  {
+   "name": "colour adjective, may swap",
+   "src": "Meet the new <span id=\"1\">red</span> edition.",
+   "v3": {
+    "fr": {
+     "text": "Voici la nouvelle <span id=\"1\">édition rouge</span> .",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "it": {
+     "text": "Ecco la nuova <span id=\"1\">edizione rossa</span> .",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "pt": {
+     "text": "Conheça a nova <span id=\"1\">edição vermelha</span> .",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "es": {
+     "text": "Conoce la nueva <span id=\"1\">edición roja</span> .",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "ja": {
+     "text": "新しい <span id=\"1\">赤</span> いエディションをご紹介します。",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    }
+   },
+   "v2026": {
+    "fr": {
+     "text": "Voici la nouvelle <span id=\"1\">édition rouge</span> .",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "it": {
+     "text": "Ecco la nuova <span id=\"1\">edizione rossa</span> .",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "pt": {
+     "text": "Conheça a nova <span id=\"1\">edição vermelha</span> .",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "es": {
+     "text": "Conoce la nueva <span id=\"1\">edición roja</span> .",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "ja": {
+     "text": "新しい <span id=\"1\">赤</span> いエディションをご紹介します。",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    }
+   }
+  },
+  {
+   "name": "price and ordinal",
+   "src": "Save <span id=\"1\">€20</span> on your <span id=\"2\">second</span> lamp.",
+   "v3": {
+    "fr": {
+     "text": "Économise <span id=\"1\">20 €</span> sur ta <span id=\"2\">deuxième</span> lampe.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "it": {
+     "text": "Risparmia <span id=\"1\">20 €</span> sulla <span id=\"2\">seconda</span> lampada.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "pt": {
+     "text": "Economize <span id=\"1\">€20</span> na <span id=\"2\">sua segunda</span> lâmpada.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "es": {
+     "text": "Ahorra <span id=\"1\">20 €</span> en tu <span id=\"2\">segunda</span> lámpara.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "ja": {
+     "text": "<span id=\"2\">2つ目の</span>ランプは<span id=\"1\">20ユーロ</span>節約できます。",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": false,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    }
+   },
+   "v2026": {
+    "fr": {
+     "text": "Économise <span id=\"1\">20 €</span> sur ta <span id=\"2\">deuxième</span> lampe.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "it": {
+     "text": "Risparmia <span id=\"1\">20 €</span> sulla <span id=\"2\">seconda</span> lampada.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "pt": {
+     "text": "Economize <span id=\"1\">€20</span> na <span id=\"2\">sua segunda</span> lâmpada.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "es": {
+     "text": "Ahorra <span id=\"1\">20 €</span> en tu <span id=\"2\">segunda</span> lámpara.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "ja": {
+     "text": "<span id=\"2\">2つ目の</span>ランプは<span id=\"1\">20ユーロ</span>節約できます。",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": false,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    }
+   }
+  },
+  {
+   "name": "protected term plus styled word",
+   "src": "<span class=\"notranslate\">Lumina Air</span> lights up your <span id=\"1\">whole</span> home.",
+   "v3": {
+    "fr": {
+     "text": "<span class=\"notranslate\">Lumina Air</span> illumine <span id=\"1\">toute</span> ta maison.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "it": {
+     "text": "<span class=\"notranslate\">Lumina Air</span> <span id=\"1\">illumina tutta</span> la tua casa.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "pt": {
+     "text": "<span class=\"notranslate\">Lumina Air</span> ilumina <span id=\"1\">toda</span> a sua casa.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "es": {
+     "text": "<span class=\"notranslate\">Lumina Air</span> <span id=\"1\">ilumina toda</span> tu casa.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "ja": {
+     "text": "<span class=\"notranslate\">Lumina Air</span> 家 <span id=\"1\">全体</span> を明るく照らす。",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    }
+   },
+   "v2026": {
+    "fr": {
+     "text": "<span class=\"notranslate\">Lumina Air</span> illumine <span id=\"1\">toute</span> ta maison.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "it": {
+     "text": "<span class=\"notranslate\">Lumina Air</span> <span id=\"1\">illumina tutta</span> la tua casa.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "pt": {
+     "text": "<span class=\"notranslate\">Lumina Air</span> ilumina <span id=\"1\">toda</span> a sua casa.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "es": {
+     "text": "<span class=\"notranslate\">Lumina Air</span> <span id=\"1\">ilumina toda</span> tu casa.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "ja": {
+     "text": "<span class=\"notranslate\">Lumina Air</span> 家 <span id=\"1\">全体</span> を明るく照らす。",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    }
+   }
+  },
+  {
+   "name": "protected term inside a styled span",
+   "src": "Discover <span id=\"1\">the new <span class=\"notranslate\">Lumina Mini</span></span> today.",
+   "v3": {
+    "fr": {
+     "text": "Découvrez <span id=\"1\">la nouvelle <span class=\"notranslate\">Lumina Mini</span></span> dès aujourd’hui.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "it": {
+     "text": "Scopri <span id=\"1\">oggi stesso il nuovo <span class=\"notranslate\">Lumina Mini</span></span> .",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "pt": {
+     "text": "Descubra <span id=\"1\">a nova <span class=\"notranslate\">Lumina Mini</span></span> hoje.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "es": {
+     "text": "Descubre <span id=\"1\">la nueva <span class=\"notranslate\">Lumina Mini</span></span> hoy mismo.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "ja": {
+     "text": "新しい<span id=\"1\"><span class=\"notranslate\">Lumina Mini</span></span>を今日ご紹介します。",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    }
+   },
+   "v2026": {
+    "fr": {
+     "text": "Découvrez <span id=\"1\">la nouvelle <span class=\"notranslate\">Lumina Mini</span></span> dès aujourd’hui.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "it": {
+     "text": "Scopri <span id=\"1\">oggi stesso il nuovo <span class=\"notranslate\">Lumina Mini</span></span> .",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "pt": {
+     "text": "Descubra <span id=\"1\">a nova <span class=\"notranslate\">Lumina Mini</span></span> hoje.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "es": {
+     "text": "Descubre <span id=\"1\">la nueva <span class=\"notranslate\">Lumina Mini</span></span> hoy mismo.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "ja": {
+     "text": "新しい<span id=\"1\"><span class=\"notranslate\">Lumina Mini</span></span>を今日ご紹介します。",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    }
+   }
+  },
+  {
+   "name": "protected term beside a styled span",
+   "src": "Only <span class=\"notranslate\">Lumina Air</span> <span id=\"1\">adjusts itself</span> to your day.",
+   "v3": {
+    "fr": {
+     "text": "Seul <span class=\"notranslate\">Lumina Air</span> <span id=\"1\">s’adapte</span> à votre journée.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "it": {
+     "text": "Solo <span class=\"notranslate\">Lumina Air</span> <span id=\"1\">si adatta</span> alla tua giornata.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "pt": {
+     "text": "Só <span class=\"notranslate\">Lumina Air</span> <span id=\"1\">se adapta</span> ao seu dia.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "es": {
+     "text": "Solo <span class=\"notranslate\">Lumina Air</span> <span id=\"1\">se adapta</span> a tu día.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "ja": {
+     "text": "<span class=\"notranslate\">Lumina Air</span>だけがあなたの一日に合わせて<span id=\"1\">調整されます</span>。",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    }
+   },
+   "v2026": {
+    "fr": {
+     "text": "Seul <span class=\"notranslate\">Lumina Air</span> <span id=\"1\">s’adapte</span> à votre journée.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "it": {
+     "text": "Solo <span class=\"notranslate\">Lumina Air</span> <span id=\"1\">si adatta</span> alla tua giornata.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "pt": {
+     "text": "Só <span class=\"notranslate\">Lumina Air</span> <span id=\"1\">se adapta</span> ao seu dia.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "es": {
+     "text": "Solo <span class=\"notranslate\">Lumina Air</span> <span id=\"1\">se adapta</span> a tu día.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "ja": {
+     "text": "<span class=\"notranslate\">Lumina Air</span>だけがあなたの一日に合わせて<span id=\"1\">調整されます</span>。",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    }
+   }
+  },
+  {
+   "name": "spaces at span edges",
+   "src": "Light that<span id=\"1\"> follows you </span>all day.",
+   "v3": {
+    "fr": {
+     "text": "Une lumière qui<span id=\"1\"> te suit </span>toute la journée.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "it": {
+     "text": "Luce che<span id=\"1\"> ti segue </span>tutto il giorno.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "pt": {
+     "text": "Luz que<span id=\"1\"> te acompanha </span>o dia todo.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "es": {
+     "text": "Luz que<span id=\"1\"> te acompaña </span>todo el día.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "ja": {
+     "text": "一日中<span id=\"1\"> あなたについて </span>くる光。",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    }
+   },
+   "v2026": {
+    "fr": {
+     "text": "Une lumière qui<span id=\"1\"> te suit </span>toute la journée.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "it": {
+     "text": "Luce che<span id=\"1\"> ti segue </span>tutto il giorno.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "pt": {
+     "text": "Luz que<span id=\"1\"> te acompanha </span>o dia todo.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "es": {
+     "text": "Luz que<span id=\"1\"> te acompaña </span>todo el día.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "ja": {
+     "text": "一日中<span id=\"1\"> あなたについて </span>くる光。",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    }
+   }
+  },
+  {
+   "name": "protected term, no styling",
+   "src": "The <span class=\"notranslate\">Lumina Air</span> desk lamp is small, quiet and warm.",
+   "v3": {
+    "fr": {
+     "text": "La lampe de bureau <span class=\"notranslate\">Lumina Air</span> est petite, silencieuse et chaude.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "it": {
+     "text": "La lampada da scrivania <span class=\"notranslate\">Lumina Air</span> è piccola, silenziosa e calda.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "pt": {
+     "text": "O abajur <span class=\"notranslate\">Lumina Air</span> é pequeno, silencioso e quente.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "es": {
+     "text": "La lámpara de escritorio <span class=\"notranslate\">Lumina Air</span> es pequeña, silenciosa y cálida.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "ja": {
+     "text": "<span class=\"notranslate\">Lumina Air</span>のデスクランプは小さくて静かで暖かい。",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    }
+   },
+   "v2026": {
+    "fr": {
+     "text": "La lampe de bureau <span class=\"notranslate\">Lumina Air</span> est petite, silencieuse et chaude.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "it": {
+     "text": "La lampada da scrivania <span class=\"notranslate\">Lumina Air</span> è piccola, silenziosa e calda.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "pt": {
+     "text": "O abajur <span class=\"notranslate\">Lumina Air</span> é pequeno, silencioso e quente.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "es": {
+     "text": "La lámpara de escritorio <span class=\"notranslate\">Lumina Air</span> es pequeña, silenciosa y cálida.",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    },
+    "ja": {
+     "text": "<span class=\"notranslate\">Lumina Air</span>のデスクランプは小さくて静かで暖かい。",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": true
+    }
+   }
+  },
+  {
+   "name": "sample layer, 11 stretches",
+   "src": "<span id=\"1\">Lorem ipsum </span><span id=\"2\">dolor sit amet, </span><span id=\"3\">all caps</span><span id=\"4\">, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. </span><span id=\"5\">Another font with ligatures, </span><span id=\"6\">superscript subscript ut aliquip ex ea commodo consequat. </span><span id=\"7\">UPPER CASE irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</span>",
+   "v3": {
+    "fr": {
+     "text": "<span id=\"1\">Lorem ipsum </span><span id=\"2\">dolor sit amet, </span><span id=\"3\">all caps</span><span id=\"4\">, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. </span><span id=\"5\">Another police with ligatures, </span><span id=\"6\">superscript subscript ut élargir ex ea commodo consequentement. </span><span id=\"7\">MAJUSCULES IRURE dolor in reprehension in voluptate vole esse cillum dolore eu nullo pariatur.</span>",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "it": {
+     "text": "<span id=\"1\">Lorem ipsum </span><span id=\"2\">dolor sit amet, </span><span id=\"3\">all caps</span><span id=\"4\">, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. </span><span id=\"5\">Another font with ligatures, </span><span id=\"6\">superscript subscript ut attraverso ex ea commodo conseguenze. </span><span id=\"7\">MAIUSCOLO IRURE dolor in repausto in voluptate il luogo di riferimento per essere cillum dolore eu nulla pariatur.</span>",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "pt": {
+     "text": "<span id=\"1\">Lorem ipsum </span><span id=\"2\">dolor sit amet, </span><span id=\"3\">all caps</span><span id=\"4\">, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. </span><span id=\"5\">Outra fonte com ligaduras, </span><span id=\"6\">superscript subscript ut além de uma confortável consequente. </span><span id=\"7\">MAIÚSCULAS IRURE dolor in reprehensão em voluptate fugiat esse cillum dolore eu nulla pariatur.</span>",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "es": {
+     "text": "<span id=\"1\">Lorem ipsum </span><span id=\"2\">dolor sit amet, </span><span id=\"3\">all mayúsculas</span><span id=\"4\">, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. </span><span id=\"5\">Another font with ligatures, </span><span id=\"6\">superscript subscript ut juntúul ex ea commodo consequente. </span><span id=\"7\">MAYÚSCULAS IRURE dolor in repujada in voluptate vult esse cillum dolore eu fugiat nulla pariatur.</span>",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "ja": {
+     "text": "<span id=\"1\">Lorem ipsum </span><span id=\"2\">dolor sit amet、 </span><span id=\"3\">全大文字</span><span id=\"4\">、sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. </span><span id=\"5\">合字付きの別のフォント、 </span><span id=\"6\">上付き添字 ut aliquip ex ea commodo consequat. </span><span id=\"7\">大文字 irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</span>",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    }
+   },
+   "v2026": {
+    "fr": {
+     "text": "<span id=\"1\">Lorem ipsum </span><span id=\"2\">dolor sit amet, </span><span id=\"3\">all caps</span><span id=\"4\">, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. </span><span id=\"5\">Another police with ligatures, </span><span id=\"6\">superscript subscript ut élargir ex ea commodo consequentement. </span><span id=\"7\">MAJUSCULES IRURE dolor in reprehension in voluptate vole esse cillum dolore eu nullo pariatur.</span>",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "it": {
+     "text": "<span id=\"1\">Lorem ipsum </span><span id=\"2\">dolor sit amet, </span><span id=\"3\">all caps</span><span id=\"4\">, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. </span><span id=\"5\">Another font with ligatures, </span><span id=\"6\">superscript subscript ut attraverso ex ea commodo conseguenze. </span><span id=\"7\">MAIUSCOLO IRURE dolor in repausto in voluptate il luogo di riferimento per essere cillum dolore eu nulla pariatur.</span>",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "pt": {
+     "text": "<span id=\"1\">Lorem ipsum </span><span id=\"2\">dolor sit amet, </span><span id=\"3\">all caps</span><span id=\"4\">, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. </span><span id=\"5\">Outra fonte com ligaduras, </span><span id=\"6\">superscript subscript ut além de uma confortável consequente. </span><span id=\"7\">MAIÚSCULAS IRURE dolor in reprehensão em voluptate fugiat esse cillum dolore eu nulla pariatur.</span>",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "es": {
+     "text": "<span id=\"1\">Lorem ipsum </span><span id=\"2\">dolor sit amet, </span><span id=\"3\">all mayúsculas</span><span id=\"4\">, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. </span><span id=\"5\">Another font with ligatures, </span><span id=\"6\">superscript subscript ut juntúul ex ea commodo consequente. </span><span id=\"7\">MAYÚSCULAS IRURE dolor in repujada in voluptate vult esse cillum dolore eu fugiat nulla pariatur.</span>",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    },
+    "ja": {
+     "text": "<span id=\"1\">Lorem ipsum </span><span id=\"2\">dolor sit amet、 </span><span id=\"3\">全大文字</span><span id=\"4\">、sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. </span><span id=\"5\">合字付きの別のフォント、 </span><span id=\"6\">上付き添字 ut aliquip ex ea commodo consequat. </span><span id=\"7\">大文字 irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</span>",
+     "wellFormed": true,
+     "idsSame": true,
+     "idsOrderSame": true,
+     "missing": [],
+     "extra": [],
+     "notranslateKept": null
+    }
+   }
+  }
+ ],
+ "v3": {
+  "status": 200,
+  "usage": "6545",
+  "body": [
+   {
+    "translations": [
+     {
+      "text": "Obtenez <span id=\"1\">30 % de réduction</span> sur chaque lampe cette semaine.",
+      "to": "fr"
+     },
+     {
+      "text": "Ottieni <span id=\"1\">il 30% di sconto</span> su ogni lampada questa settimana.",
+      "to": "it"
+     },
+     {
+      "text": "Tenha <span id=\"1\">30% de desconto</span> em cada abajur esta semana.",
+      "to": "pt"
+     },
+     {
+      "text": "Consigue <span id=\"1\">un 30% de descuento</span> en cada lámpara esta semana.",
+      "to": "es"
+     },
+     {
+      "text": "今週は全ランプが <span id=\"1\">30%オフ</span> です。",
+      "to": "ja"
+     }
+    ]
+   },
+   {
+    "translations": [
+     {
+      "text": "La <span id=\"1\">lumière parfaite</span> <span id=\"2\"></span> pour votre bureau.",
+      "to": "fr"
+     },
+     {
+      "text": "La <span id=\"2\">luce</span> <span id=\"1\">perfetta</span> per la tua scrivania.",
+      "to": "it"
+     },
+     {
+      "text": "A <span id=\"2\">luz</span> <span id=\"1\">perfeita</span> para sua mesa.",
+      "to": "pt"
+     },
+     {
+      "text": "La <span id=\"2\">luz</span> <span id=\"1\">perfecta</span> para tu escritorio.",
+      "to": "es"
+     },
+     {
+      "text": "机に <span id=\"1\">ぴったり</span>の <span id=\"2\">ライト</span> 。",
+      "to": "ja"
+     }
+    ]
+   },
+   {
+    "translations": [
+     {
+      "text": "Une <span id=\"1\">idée brillante</span> pour de <span id=\"2\">petites pièces</span>.",
+      "to": "fr"
+     },
+     {
+      "text": "<span id=\"1\">Un'idea brillante</span> per <span id=\"2\">stanze piccole</span>.",
+      "to": "it"
+     },
+     {
+      "text": "Uma <span id=\"1\">ideia brilhante</span> para <span id=\"2\">quartos pequenos</span>.",
+      "to": "pt"
+     },
+     {
+      "text": "Una <span id=\"1\">idea brillante</span> para <span id=\"2\">habitaciones pequeñas</span>.",
+      "to": "es"
+     },
+     {
+      "text": "<span id=\"2\">小さな部屋</span>にぴ<span id=\"1\">ったりのアイデア</span>ですね。",
+      "to": "ja"
+     }
+    ]
+   },
+   {
+    "translations": [
+     {
+      "text": "<span id=\"1\">De nouvelles couleurs.</span> La même grande lumière.",
+      "to": "fr"
+     },
+     {
+      "text": "<span id=\"1\">Nuovi colori.</span> Stessa grande luce.",
+      "to": "it"
+     },
+     {
+      "text": "<span id=\"1\">Novas cores.</span> Mesma luz incrível.",
+      "to": "pt"
+     },
+     {
+      "text": "<span id=\"1\">Nuevos colores.</span> La misma gran luz.",
+      "to": "es"
+     },
+     {
+      "text": "<span id=\"1\">新しい色。</span> 同じ素晴らしい光。",
+      "to": "ja"
+     }
+    ]
+   },
+   {
+    "translations": [
+     {
+      "text": "Commandez dès aujourd’hui et <span id=\"1\">bénéficiez <span id=\"2\">de</span> la livraison gratuite</span>.",
+      "to": "fr"
+     },
+     {
+      "text": "Ordina oggi stesso e <span id=\"1\">ricevi la consegna <span id=\"2\">gratuita</span></span>.",
+      "to": "it"
+     },
+     {
+      "text": "Faça o pedido hoje e <span id=\"1\">receba <span id=\"2\">entrega gratuita</span></span>.",
+      "to": "pt"
+     },
+     {
+      "text": "Pide hoy y <span id=\"1\">recibe entrega <span id=\"2\">gratuita</span></span>.",
+      "to": "es"
+     },
+     {
+      "text": "今すぐご注文すれば <span id=\"1\">、送料 <span id=\"2\">無料</span> です</span>。",
+      "to": "ja"
+     }
+    ]
+   },
+   {
+    "translations": [
+     {
+      "text": "Livraison <span id=\"1\">gratuite</span>",
+      "to": "fr"
+     },
+     {
+      "text": "Consegna <span id=\"1\">gratuita</span>",
+      "to": "it"
+     },
+     {
+      "text": "Entrega <span id=\"1\">gratuita</span>",
+      "to": "pt"
+     },
+     {
+      "text": "<span id=\"1\">Entrega gratuita</span>",
+      "to": "es"
+     },
+     {
+      "text": "<span id=\"1\">無料</span> 配送",
+      "to": "ja"
+     }
+    ]
+   },
+   {
+    "translations": [
+     {
+      "text": "Voici la nouvelle <span id=\"1\">édition rouge</span> .",
+      "to": "fr"
+     },
+     {
+      "text": "Ecco la nuova <span id=\"1\">edizione rossa</span> .",
+      "to": "it"
+     },
+     {
+      "text": "Conheça a nova <span id=\"1\">edição vermelha</span> .",
+      "to": "pt"
+     },
+     {
+      "text": "Conoce la nueva <span id=\"1\">edición roja</span> .",
+      "to": "es"
+     },
+     {
+      "text": "新しい <span id=\"1\">赤</span> いエディションをご紹介します。",
+      "to": "ja"
+     }
+    ]
+   },
+   {
+    "translations": [
+     {
+      "text": "Économise <span id=\"1\">20 €</span> sur ta <span id=\"2\">deuxième</span> lampe.",
+      "to": "fr"
+     },
+     {
+      "text": "Risparmia <span id=\"1\">20 €</span> sulla <span id=\"2\">seconda</span> lampada.",
+      "to": "it"
+     },
+     {
+      "text": "Economize <span id=\"1\">€20</span> na <span id=\"2\">sua segunda</span> lâmpada.",
+      "to": "pt"
+     },
+     {
+      "text": "Ahorra <span id=\"1\">20 €</span> en tu <span id=\"2\">segunda</span> lámpara.",
+      "to": "es"
+     },
+     {
+      "text": "<span id=\"2\">2つ目の</span>ランプは<span id=\"1\">20ユーロ</span>節約できます。",
+      "to": "ja"
+     }
+    ]
+   },
+   {
+    "translations": [
+     {
+      "text": "<span class=\"notranslate\">Lumina Air</span> illumine <span id=\"1\">toute</span> ta maison.",
+      "to": "fr"
+     },
+     {
+      "text": "<span class=\"notranslate\">Lumina Air</span> <span id=\"1\">illumina tutta</span> la tua casa.",
+      "to": "it"
+     },
+     {
+      "text": "<span class=\"notranslate\">Lumina Air</span> ilumina <span id=\"1\">toda</span> a sua casa.",
+      "to": "pt"
+     },
+     {
+      "text": "<span class=\"notranslate\">Lumina Air</span> <span id=\"1\">ilumina toda</span> tu casa.",
+      "to": "es"
+     },
+     {
+      "text": "<span class=\"notranslate\">Lumina Air</span> 家 <span id=\"1\">全体</span> を明るく照らす。",
+      "to": "ja"
+     }
+    ]
+   },
+   {
+    "translations": [
+     {
+      "text": "Découvrez <span id=\"1\">la nouvelle <span class=\"notranslate\">Lumina Mini</span></span> dès aujourd’hui.",
+      "to": "fr"
+     },
+     {
+      "text": "Scopri <span id=\"1\">oggi stesso il nuovo <span class=\"notranslate\">Lumina Mini</span></span> .",
+      "to": "it"
+     },
+     {
+      "text": "Descubra <span id=\"1\">a nova <span class=\"notranslate\">Lumina Mini</span></span> hoje.",
+      "to": "pt"
+     },
+     {
+      "text": "Descubre <span id=\"1\">la nueva <span class=\"notranslate\">Lumina Mini</span></span> hoy mismo.",
+      "to": "es"
+     },
+     {
+      "text": "新しい<span id=\"1\"><span class=\"notranslate\">Lumina Mini</span></span>を今日ご紹介します。",
+      "to": "ja"
+     }
+    ]
+   },
+   {
+    "translations": [
+     {
+      "text": "Seul <span class=\"notranslate\">Lumina Air</span> <span id=\"1\">s’adapte</span> à votre journée.",
+      "to": "fr"
+     },
+     {
+      "text": "Solo <span class=\"notranslate\">Lumina Air</span> <span id=\"1\">si adatta</span> alla tua giornata.",
+      "to": "it"
+     },
+     {
+      "text": "Só <span class=\"notranslate\">Lumina Air</span> <span id=\"1\">se adapta</span> ao seu dia.",
+      "to": "pt"
+     },
+     {
+      "text": "Solo <span class=\"notranslate\">Lumina Air</span> <span id=\"1\">se adapta</span> a tu día.",
+      "to": "es"
+     },
+     {
+      "text": "<span class=\"notranslate\">Lumina Air</span>だけがあなたの一日に合わせて<span id=\"1\">調整されます</span>。",
+      "to": "ja"
+     }
+    ]
+   },
+   {
+    "translations": [
+     {
+      "text": "Une lumière qui<span id=\"1\"> te suit </span>toute la journée.",
+      "to": "fr"
+     },
+     {
+      "text": "Luce che<span id=\"1\"> ti segue </span>tutto il giorno.",
+      "to": "it"
+     },
+     {
+      "text": "Luz que<span id=\"1\"> te acompanha </span>o dia todo.",
+      "to": "pt"
+     },
+     {
+      "text": "Luz que<span id=\"1\"> te acompaña </span>todo el día.",
+      "to": "es"
+     },
+     {
+      "text": "一日中<span id=\"1\"> あなたについて </span>くる光。",
+      "to": "ja"
+     }
+    ]
+   },
+   {
+    "translations": [
+     {
+      "text": "La lampe de bureau <span class=\"notranslate\">Lumina Air</span> est petite, silencieuse et chaude.",
+      "to": "fr"
+     },
+     {
+      "text": "La lampada da scrivania <span class=\"notranslate\">Lumina Air</span> è piccola, silenziosa e calda.",
+      "to": "it"
+     },
+     {
+      "text": "O abajur <span class=\"notranslate\">Lumina Air</span> é pequeno, silencioso e quente.",
+      "to": "pt"
+     },
+     {
+      "text": "La lámpara de escritorio <span class=\"notranslate\">Lumina Air</span> es pequeña, silenciosa y cálida.",
+      "to": "es"
+     },
+     {
+      "text": "<span class=\"notranslate\">Lumina Air</span>のデスクランプは小さくて静かで暖かい。",
+      "to": "ja"
+     }
+    ]
+   },
+   {
+    "translations": [
+     {
+      "text": "<span id=\"1\">Lorem ipsum </span><span id=\"2\">dolor sit amet, </span><span id=\"3\">all caps</span><span id=\"4\">, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. </span><span id=\"5\">Another police with ligatures, </span><span id=\"6\">superscript subscript ut élargir ex ea commodo consequentement. </span><span id=\"7\">MAJUSCULES IRURE dolor in reprehension in voluptate vole esse cillum dolore eu nullo pariatur.</span>",
+      "to": "fr"
+     },
+     {
+      "text": "<span id=\"1\">Lorem ipsum </span><span id=\"2\">dolor sit amet, </span><span id=\"3\">all caps</span><span id=\"4\">, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. </span><span id=\"5\">Another font with ligatures, </span><span id=\"6\">superscript subscript ut attraverso ex ea commodo conseguenze. </span><span id=\"7\">MAIUSCOLO IRURE dolor in repausto in voluptate il luogo di riferimento per essere cillum dolore eu nulla pariatur.</span>",
+      "to": "it"
+     },
+     {
+      "text": "<span id=\"1\">Lorem ipsum </span><span id=\"2\">dolor sit amet, </span><span id=\"3\">all caps</span><span id=\"4\">, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. </span><span id=\"5\">Outra fonte com ligaduras, </span><span id=\"6\">superscript subscript ut além de uma confortável consequente. </span><span id=\"7\">MAIÚSCULAS IRURE dolor in reprehensão em voluptate fugiat esse cillum dolore eu nulla pariatur.</span>",
+      "to": "pt"
+     },
+     {
+      "text": "<span id=\"1\">Lorem ipsum </span><span id=\"2\">dolor sit amet, </span><span id=\"3\">all mayúsculas</span><span id=\"4\">, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. </span><span id=\"5\">Another font with ligatures, </span><span id=\"6\">superscript subscript ut juntúul ex ea commodo consequente. </span><span id=\"7\">MAYÚSCULAS IRURE dolor in repujada in voluptate vult esse cillum dolore eu fugiat nulla pariatur.</span>",
+      "to": "es"
+     },
+     {
+      "text": "<span id=\"1\">Lorem ipsum </span><span id=\"2\">dolor sit amet、 </span><span id=\"3\">全大文字</span><span id=\"4\">、sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. </span><span id=\"5\">合字付きの別のフォント、 </span><span id=\"6\">上付き添字 ut aliquip ex ea commodo consequat. </span><span id=\"7\">大文字 irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</span>",
+      "to": "ja"
+     }
+    ]
+   }
+  ]
+ },
+ "v2026": {
+  "status": 200,
+  "headers": {
+   "x-mt-system": "Microsoft",
+   "sourcecharacterscharged": "6545"
+  },
+  "body": {
+   "value": [
+    {
+     "translations": [
+      {
+       "language": "fr",
+       "text": "Obtenez <span id=\"1\">30 % de réduction</span> sur chaque lampe cette semaine.",
+       "sourceCharacters": 53
+      },
+      {
+       "language": "it",
+       "text": "Ottieni <span id=\"1\">il 30% di sconto</span> su ogni lampada questa settimana.",
+       "sourceCharacters": 53
+      },
+      {
+       "language": "pt",
+       "text": "Tenha <span id=\"1\">30% de desconto</span> em cada abajur esta semana.",
+       "sourceCharacters": 53
+      },
+      {
+       "language": "es",
+       "text": "Consigue <span id=\"1\">un 30% de descuento</span> en cada lámpara esta semana.",
+       "sourceCharacters": 53
+      },
+      {
+       "language": "ja",
+       "text": "今週は全ランプが <span id=\"1\">30%オフ</span> です。",
+       "sourceCharacters": 53
+      }
+     ]
+    },
+    {
+     "translations": [
+      {
+       "language": "fr",
+       "text": "La <span id=\"1\">lumière parfaite</span> <span id=\"2\"></span> pour votre bureau.",
+       "sourceCharacters": 72
+      },
+      {
+       "language": "it",
+       "text": "La <span id=\"2\">luce</span> <span id=\"1\">perfetta</span> per la tua scrivania.",
+       "sourceCharacters": 72
+      },
+      {
+       "language": "pt",
+       "text": "A <span id=\"2\">luz</span> <span id=\"1\">perfeita</span> para sua mesa.",
+       "sourceCharacters": 72
+      },
+      {
+       "language": "es",
+       "text": "La <span id=\"2\">luz</span> <span id=\"1\">perfecta</span> para tu escritorio.",
+       "sourceCharacters": 72
+      },
+      {
+       "language": "ja",
+       "text": "机に <span id=\"1\">ぴったり</span>の <span id=\"2\">ライト</span> 。",
+       "sourceCharacters": 72
+      }
+     ]
+    },
+    {
+     "translations": [
+      {
+       "language": "fr",
+       "text": "Une <span id=\"1\">idée brillante</span> pour de <span id=\"2\">petites pièces</span>.",
+       "sourceCharacters": 70
+      },
+      {
+       "language": "it",
+       "text": "<span id=\"1\">Un'idea brillante</span> per <span id=\"2\">stanze piccole</span>.",
+       "sourceCharacters": 70
+      },
+      {
+       "language": "pt",
+       "text": "Uma <span id=\"1\">ideia brilhante</span> para <span id=\"2\">quartos pequenos</span>.",
+       "sourceCharacters": 70
+      },
+      {
+       "language": "es",
+       "text": "Una <span id=\"1\">idea brillante</span> para <span id=\"2\">habitaciones pequeñas</span>.",
+       "sourceCharacters": 70
+      },
+      {
+       "language": "ja",
+       "text": "<span id=\"2\">小さな部屋</span>にぴ<span id=\"1\">ったりのアイデア</span>ですね。",
+       "sourceCharacters": 70
+      }
+     ]
+    },
+    {
+     "translations": [
+      {
+       "language": "fr",
+       "text": "<span id=\"1\">De nouvelles couleurs.</span> La même grande lumière.",
+       "sourceCharacters": 50
+      },
+      {
+       "language": "it",
+       "text": "<span id=\"1\">Nuovi colori.</span> Stessa grande luce.",
+       "sourceCharacters": 50
+      },
+      {
+       "language": "pt",
+       "text": "<span id=\"1\">Novas cores.</span> Mesma luz incrível.",
+       "sourceCharacters": 50
+      },
+      {
+       "language": "es",
+       "text": "<span id=\"1\">Nuevos colores.</span> La misma gran luz.",
+       "sourceCharacters": 50
+      },
+      {
+       "language": "ja",
+       "text": "<span id=\"1\">新しい色。</span> 同じ素晴らしい光。",
+       "sourceCharacters": 50
+      }
+     ]
+    },
+    {
+     "translations": [
+      {
+       "language": "fr",
+       "text": "Commandez dès aujourd’hui et <span id=\"1\">bénéficiez <span id=\"2\">de</span> la livraison gratuite</span>.",
+       "sourceCharacters": 74
+      },
+      {
+       "language": "it",
+       "text": "Ordina oggi stesso e <span id=\"1\">ricevi la consegna <span id=\"2\">gratuita</span></span>.",
+       "sourceCharacters": 74
+      },
+      {
+       "language": "pt",
+       "text": "Faça o pedido hoje e <span id=\"1\">receba <span id=\"2\">entrega gratuita</span></span>.",
+       "sourceCharacters": 74
+      },
+      {
+       "language": "es",
+       "text": "Pide hoy y <span id=\"1\">recibe entrega <span id=\"2\">gratuita</span></span>.",
+       "sourceCharacters": 74
+      },
+      {
+       "language": "ja",
+       "text": "今すぐご注文すれば <span id=\"1\">、送料 <span id=\"2\">無料</span> です</span>。",
+       "sourceCharacters": 74
+      }
+     ]
+    },
+    {
+     "translations": [
+      {
+       "language": "fr",
+       "text": "Livraison <span id=\"1\">gratuite</span>",
+       "sourceCharacters": 33
+      },
+      {
+       "language": "it",
+       "text": "Consegna <span id=\"1\">gratuita</span>",
+       "sourceCharacters": 33
+      },
+      {
+       "language": "pt",
+       "text": "Entrega <span id=\"1\">gratuita</span>",
+       "sourceCharacters": 33
+      },
+      {
+       "language": "es",
+       "text": "<span id=\"1\">Entrega gratuita</span>",
+       "sourceCharacters": 33
+      },
+      {
+       "language": "ja",
+       "text": "<span id=\"1\">無料</span> 配送",
+       "sourceCharacters": 33
+      }
+     ]
+    },
+    {
+     "translations": [
+      {
+       "language": "fr",
+       "text": "Voici la nouvelle <span id=\"1\">édition rouge</span> .",
+       "sourceCharacters": 45
+      },
+      {
+       "language": "it",
+       "text": "Ecco la nuova <span id=\"1\">edizione rossa</span> .",
+       "sourceCharacters": 45
+      },
+      {
+       "language": "pt",
+       "text": "Conheça a nova <span id=\"1\">edição vermelha</span> .",
+       "sourceCharacters": 45
+      },
+      {
+       "language": "es",
+       "text": "Conoce la nueva <span id=\"1\">edición roja</span> .",
+       "sourceCharacters": 45
+      },
+      {
+       "language": "ja",
+       "text": "新しい <span id=\"1\">赤</span> いエディションをご紹介します。",
+       "sourceCharacters": 45
+      }
+     ]
+    },
+    {
+     "translations": [
+      {
+       "language": "fr",
+       "text": "Économise <span id=\"1\">20 €</span> sur ta <span id=\"2\">deuxième</span> lampe.",
+       "sourceCharacters": 69
+      },
+      {
+       "language": "it",
+       "text": "Risparmia <span id=\"1\">20 €</span> sulla <span id=\"2\">seconda</span> lampada.",
+       "sourceCharacters": 69
+      },
+      {
+       "language": "pt",
+       "text": "Economize <span id=\"1\">€20</span> na <span id=\"2\">sua segunda</span> lâmpada.",
+       "sourceCharacters": 69
+      },
+      {
+       "language": "es",
+       "text": "Ahorra <span id=\"1\">20 €</span> en tu <span id=\"2\">segunda</span> lámpara.",
+       "sourceCharacters": 69
+      },
+      {
+       "language": "ja",
+       "text": "<span id=\"2\">2つ目の</span>ランプは<span id=\"1\">20ユーロ</span>節約できます。",
+       "sourceCharacters": 69
+      }
+     ]
+    },
+    {
+     "translations": [
+      {
+       "language": "fr",
+       "text": "<span class=\"notranslate\">Lumina Air</span> illumine <span id=\"1\">toute</span> ta maison.",
+       "sourceCharacters": 90
+      },
+      {
+       "language": "it",
+       "text": "<span class=\"notranslate\">Lumina Air</span> <span id=\"1\">illumina tutta</span> la tua casa.",
+       "sourceCharacters": 90
+      },
+      {
+       "language": "pt",
+       "text": "<span class=\"notranslate\">Lumina Air</span> ilumina <span id=\"1\">toda</span> a sua casa.",
+       "sourceCharacters": 90
+      },
+      {
+       "language": "es",
+       "text": "<span class=\"notranslate\">Lumina Air</span> <span id=\"1\">ilumina toda</span> tu casa.",
+       "sourceCharacters": 90
+      },
+      {
+       "language": "ja",
+       "text": "<span class=\"notranslate\">Lumina Air</span> 家 <span id=\"1\">全体</span> を明るく照らす。",
+       "sourceCharacters": 90
+      }
+     ]
+    },
+    {
+     "translations": [
+      {
+       "language": "fr",
+       "text": "Découvrez <span id=\"1\">la nouvelle <span class=\"notranslate\">Lumina Mini</span></span> dès aujourd’hui.",
+       "sourceCharacters": 88
+      },
+      {
+       "language": "it",
+       "text": "Scopri <span id=\"1\">oggi stesso il nuovo <span class=\"notranslate\">Lumina Mini</span></span> .",
+       "sourceCharacters": 88
+      },
+      {
+       "language": "pt",
+       "text": "Descubra <span id=\"1\">a nova <span class=\"notranslate\">Lumina Mini</span></span> hoje.",
+       "sourceCharacters": 88
+      },
+      {
+       "language": "es",
+       "text": "Descubre <span id=\"1\">la nueva <span class=\"notranslate\">Lumina Mini</span></span> hoy mismo.",
+       "sourceCharacters": 88
+      },
+      {
+       "language": "ja",
+       "text": "新しい<span id=\"1\"><span class=\"notranslate\">Lumina Mini</span></span>を今日ご紹介します。",
+       "sourceCharacters": 88
+      }
+     ]
+    },
+    {
+     "translations": [
+      {
+       "language": "fr",
+       "text": "Seul <span class=\"notranslate\">Lumina Air</span> <span id=\"1\">s’adapte</span> à votre journée.",
+       "sourceCharacters": 96
+      },
+      {
+       "language": "it",
+       "text": "Solo <span class=\"notranslate\">Lumina Air</span> <span id=\"1\">si adatta</span> alla tua giornata.",
+       "sourceCharacters": 96
+      },
+      {
+       "language": "pt",
+       "text": "Só <span class=\"notranslate\">Lumina Air</span> <span id=\"1\">se adapta</span> ao seu dia.",
+       "sourceCharacters": 96
+      },
+      {
+       "language": "es",
+       "text": "Solo <span class=\"notranslate\">Lumina Air</span> <span id=\"1\">se adapta</span> a tu día.",
+       "sourceCharacters": 96
+      },
+      {
+       "language": "ja",
+       "text": "<span class=\"notranslate\">Lumina Air</span>だけがあなたの一日に合わせて<span id=\"1\">調整されます</span>。",
+       "sourceCharacters": 96
+      }
+     ]
+    },
+    {
+     "translations": [
+      {
+       "language": "fr",
+       "text": "Une lumière qui<span id=\"1\"> te suit </span>toute la journée.",
+       "sourceCharacters": 51
+      },
+      {
+       "language": "it",
+       "text": "Luce che<span id=\"1\"> ti segue </span>tutto il giorno.",
+       "sourceCharacters": 51
+      },
+      {
+       "language": "pt",
+       "text": "Luz que<span id=\"1\"> te acompanha </span>o dia todo.",
+       "sourceCharacters": 51
+      },
+      {
+       "language": "es",
+       "text": "Luz que<span id=\"1\"> te acompaña </span>todo el día.",
+       "sourceCharacters": 51
+      },
+      {
+       "language": "ja",
+       "text": "一日中<span id=\"1\"> あなたについて </span>くる光。",
+       "sourceCharacters": 51
+      }
+     ]
+    },
+    {
+     "translations": [
+      {
+       "language": "fr",
+       "text": "La lampe de bureau <span class=\"notranslate\">Lumina Air</span> est petite, silencieuse et chaude.",
+       "sourceCharacters": 83
+      },
+      {
+       "language": "it",
+       "text": "La lampada da scrivania <span class=\"notranslate\">Lumina Air</span> è piccola, silenziosa e calda.",
+       "sourceCharacters": 83
+      },
+      {
+       "language": "pt",
+       "text": "O abajur <span class=\"notranslate\">Lumina Air</span> é pequeno, silencioso e quente.",
+       "sourceCharacters": 83
+      },
+      {
+       "language": "es",
+       "text": "La lámpara de escritorio <span class=\"notranslate\">Lumina Air</span> es pequeña, silenciosa y cálida.",
+       "sourceCharacters": 83
+      },
+      {
+       "language": "ja",
+       "text": "<span class=\"notranslate\">Lumina Air</span>のデスクランプは小さくて静かで暖かい。",
+       "sourceCharacters": 83
+      }
+     ]
+    },
+    {
+     "translations": [
+      {
+       "language": "fr",
+       "text": "<span id=\"1\">Lorem ipsum </span><span id=\"2\">dolor sit amet, </span><span id=\"3\">all caps</span><span id=\"4\">, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. </span><span id=\"5\">Another police with ligatures, </span><span id=\"6\">superscript subscript ut élargir ex ea commodo consequentement. </span><span id=\"7\">MAJUSCULES IRURE dolor in reprehension in voluptate vole esse cillum dolore eu nullo pariatur.</span>",
+       "sourceCharacters": 435
+      },
+      {
+       "language": "it",
+       "text": "<span id=\"1\">Lorem ipsum </span><span id=\"2\">dolor sit amet, </span><span id=\"3\">all caps</span><span id=\"4\">, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. </span><span id=\"5\">Another font with ligatures, </span><span id=\"6\">superscript subscript ut attraverso ex ea commodo conseguenze. </span><span id=\"7\">MAIUSCOLO IRURE dolor in repausto in voluptate il luogo di riferimento per essere cillum dolore eu nulla pariatur.</span>",
+       "sourceCharacters": 435
+      },
+      {
+       "language": "pt",
+       "text": "<span id=\"1\">Lorem ipsum </span><span id=\"2\">dolor sit amet, </span><span id=\"3\">all caps</span><span id=\"4\">, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. </span><span id=\"5\">Outra fonte com ligaduras, </span><span id=\"6\">superscript subscript ut além de uma confortável consequente. </span><span id=\"7\">MAIÚSCULAS IRURE dolor in reprehensão em voluptate fugiat esse cillum dolore eu nulla pariatur.</span>",
+       "sourceCharacters": 435
+      },
+      {
+       "language": "es",
+       "text": "<span id=\"1\">Lorem ipsum </span><span id=\"2\">dolor sit amet, </span><span id=\"3\">all mayúsculas</span><span id=\"4\">, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. </span><span id=\"5\">Another font with ligatures, </span><span id=\"6\">superscript subscript ut juntúul ex ea commodo consequente. </span><span id=\"7\">MAYÚSCULAS IRURE dolor in repujada in voluptate vult esse cillum dolore eu fugiat nulla pariatur.</span>",
+       "sourceCharacters": 435
+      },
+      {
+       "language": "ja",
+       "text": "<span id=\"1\">Lorem ipsum </span><span id=\"2\">dolor sit amet、 </span><span id=\"3\">全大文字</span><span id=\"4\">、sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. </span><span id=\"5\">合字付きの別のフォント、 </span><span id=\"6\">上付き添字 ut aliquip ex ea commodo consequat. </span><span id=\"7\">大文字 irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.</span>",
+       "sourceCharacters": 435
+      }
+     ]
+    }
+   ]
+  }
+ }
+}
